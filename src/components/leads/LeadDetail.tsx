@@ -2,14 +2,21 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   X, Mail, Phone, Building2, User, Save, Megaphone,
   Sparkles, Copy, Send, ChevronDown, Plus, Loader2,
-  Check, AlertCircle, SlidersHorizontal, RefreshCw, Bot, Trash2, MinusCircle
+  Check, AlertCircle, SlidersHorizontal, RefreshCw, Bot, Trash2, MinusCircle,
+  Settings, MapPin
 } from 'lucide-react';
 import { useLeads } from '../../hooks/useLeads';
 import { useCampaigns } from '../../hooks/useCampaigns';
 import { useCustomFields } from '../../hooks/useCustomFields';
+import { useWorkspace } from '../../contexts/WorkspaceContext';
 import { supabase } from '../../lib/supabase';
-import type { Lead, Campaign, Message } from '../../types';
+import type { Lead, Campaign, Message, Profile } from '../../types';
 import { cn } from '../../utils/cn';
+
+const STAGES = [
+  'Base', 'Lead Mapeado', 'Tentando Contato', 'Conexão Iniciada',
+  'Desqualificado', 'Qualificado', 'Reunião Agendada'
+];
 
 interface LeadDetailProps {
   lead: Lead | null;
@@ -18,12 +25,15 @@ interface LeadDetailProps {
 }
 
 export function LeadDetail({ lead, onClose, onLeadUpdated }: LeadDetailProps) {
-  const { updateLead, deleteLead, moveLead } = useLeads();
+  const { updateLead, deleteLead } = useLeads();
   const { campaigns } = useCampaigns();
-  const { fieldDefinitions, getValueForField, upsertFieldValue, addFieldDefinition, deleteFieldDefinition } = useCustomFields(lead?.id);
+  const { fieldDefinitions, getValueForField, upsertFieldValue, addFieldDefinition, deleteFieldDefinition, updateFieldRequiredStages } = useCustomFields(lead?.id);
+  const { workspace } = useWorkspace();
 
   const [formData, setFormData] = useState<Partial<Lead>>({});
   const [saving, setSaving] = useState(false);
+  const [workspaceMembers, setWorkspaceMembers] = useState<Profile[]>([]);
+  const [expandedFieldConfig, setExpandedFieldConfig] = useState<string | null>(null);
 
   // Saved messages from DB
   const [savedMessages, setSavedMessages] = useState<Message[]>([]);
@@ -62,9 +72,19 @@ export function LeadDetail({ lead, onClose, onLeadUpdated }: LeadDetailProps) {
       setAiError(null);
       setSelectedCampaign(null);
       setShowGenerator(false);
+      setExpandedFieldConfig(null);
       loadMessages(lead.id);
     }
   }, [lead, loadMessages]);
+
+  useEffect(() => {
+    if (!workspace) return;
+    supabase
+      .from('profiles')
+      .select('*')
+      .eq('workspace_id', workspace.id)
+      .then(({ data }) => setWorkspaceMembers(data ?? []));
+  }, [workspace]);
 
   if (!lead) return null;
 
@@ -212,6 +232,13 @@ export function LeadDetail({ lead, onClose, onLeadUpdated }: LeadDetailProps) {
     setAddingField(false);
   };
 
+  const handleToggleRequiredStage = async (fieldId: string, stage: string, required: boolean) => {
+    const field = fieldDefinitions.find(f => f.id === fieldId);
+    if (!field) return;
+    const updated = { ...(field.is_required_at_stage ?? {}), [stage]: required };
+    await updateFieldRequiredStages(fieldId, updated);
+  };
+
   const hasSavedMessages = savedMessages.length > 0;
 
   return (
@@ -293,6 +320,35 @@ export function LeadDetail({ lead, onClose, onLeadUpdated }: LeadDetailProps) {
                   onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
                 />
               </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                  <MapPin size={10} /> Origem
+                </label>
+                <input
+                  type="text"
+                  placeholder="LinkedIn, Indicação, Site..."
+                  className="w-full bg-secondary/50 border border-border rounded-lg p-2 text-sm focus:ring-1 focus:ring-primary outline-none"
+                  value={formData.source ?? ''}
+                  onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                  <User size={10} /> Responsável
+                </label>
+                <select
+                  className="w-full bg-secondary/50 border border-border rounded-lg p-2 text-sm focus:ring-1 focus:ring-primary outline-none"
+                  value={formData.assigned_to ?? ''}
+                  onChange={(e) => setFormData({ ...formData, assigned_to: e.target.value || null })}
+                >
+                  <option value="">Sem responsável</option>
+                  {workspaceMembers.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.full_name || `Usuário ${m.id.slice(0, 8)}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </section>
 
@@ -317,9 +373,18 @@ export function LeadDetail({ lead, onClose, onLeadUpdated }: LeadDetailProps) {
             ) : (
               <div className="grid grid-cols-2 gap-3">
                 {fieldDefinitions.map((def) => (
-                  <div key={def.id} className="group relative">
+                  <div key={def.id} className="col-span-2 group">
                     <label className="text-xs text-muted-foreground mb-1 flex items-center justify-between">
-                      {def.name}
+                      <span className="flex items-center gap-1">
+                        {def.name}
+                        <button
+                          onClick={() => setExpandedFieldConfig(expandedFieldConfig === def.id ? null : def.id)}
+                          className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary transition-all"
+                          title="Configurar etapas obrigatórias"
+                        >
+                          <Settings size={10} />
+                        </button>
+                      </span>
                       <button
                         onClick={async () => {
                           if (confirm(`Excluir o campo "${def.name}" de todos os leads?`)) {
@@ -332,6 +397,24 @@ export function LeadDetail({ lead, onClose, onLeadUpdated }: LeadDetailProps) {
                         <MinusCircle size={12} />
                       </button>
                     </label>
+                    {expandedFieldConfig === def.id && (
+                      <div className="mb-2 p-2 bg-secondary/40 rounded-lg border border-primary/20 text-xs">
+                        <p className="font-medium text-muted-foreground mb-1.5">Obrigatório nas etapas:</p>
+                        <div className="flex flex-wrap gap-x-3 gap-y-1">
+                          {STAGES.map((stage) => (
+                            <label key={stage} className="flex items-center gap-1 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={def.is_required_at_stage?.[stage] === true}
+                                onChange={(e) => handleToggleRequiredStage(def.id, stage, e.target.checked)}
+                                className="w-3 h-3 accent-primary"
+                              />
+                              <span className="text-[10px]">{stage}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     <input
                       type={def.type === 'number' ? 'number' : 'text'}
                       className="w-full bg-secondary/50 border border-border rounded-lg p-2 text-sm focus:ring-1 focus:ring-primary outline-none"

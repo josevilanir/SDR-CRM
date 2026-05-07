@@ -30,7 +30,7 @@ function AppRoutes() {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+      setSession(prev => prev?.user?.id === session?.user?.id ? prev : session);
     });
 
     return () => subscription.unsubscribe();

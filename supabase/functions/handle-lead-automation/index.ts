@@ -21,13 +21,20 @@ interface CampaignRecord {
   prompt_template: string | null;
 }
 
-function buildPrompt(lead: LeadRecord, campaign: CampaignRecord): string {
+function buildPrompt(lead: LeadRecord, campaign: CampaignRecord, customFields: Record<string, string> = {}): string {
+  const customFieldsText = Object.keys(customFields).length > 0
+    ? Object.entries(customFields)
+        .map(([key, value]) => `- ${key}: ${value}`)
+        .join("\n")
+    : null;
+
   const leadContext = [
     `- Nome: ${lead.name}`,
     lead.company   ? `- Empresa: ${lead.company}`   : null,
     lead.job_title ? `- Cargo: ${lead.job_title}`    : null,
     lead.source    ? `- Origem: ${lead.source}`      : null,
     lead.notes     ? `- Observações: ${lead.notes}`  : null,
+    customFieldsText ? `\nCampos personalizados:\n${customFieldsText}` : null,
   ].filter(Boolean).join("\n");
 
   const personaSection = campaign.prompt_template
@@ -123,6 +130,23 @@ serve(async (req: Request) => {
 
     console.log(`[handle-lead-automation] Processing ${campaigns.length} campaign(s) for stage "${newStatus}".`);
 
+    // Fetch custom field values for this lead (with field names)
+    const { data: fieldDefs } = await supabase
+      .from("field_definitions")
+      .select("id, name")
+      .eq("workspace_id", workspaceId);
+
+    const { data: cfValues } = await supabase
+      .from("lead_custom_fields")
+      .select("field_definition_id, value")
+      .eq("lead_id", leadId);
+
+    const customFields: Record<string, string> = {};
+    for (const cf of cfValues ?? []) {
+      const def = fieldDefs?.find((d) => d.id === cf.field_definition_id);
+      if (def && cf.value) customFields[def.name] = cf.value;
+    }
+
     for (const campaign of campaigns as CampaignRecord[]) {
       // Anti-loop guard: skip if messages were already generated for this pair in the last 5 minutes
       const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
@@ -139,7 +163,7 @@ serve(async (req: Request) => {
         continue;
       }
 
-      const prompt = buildPrompt(record, campaign);
+      const prompt = buildPrompt(record, campaign, customFields);
 
       try {
         const geminiRes = await fetch(

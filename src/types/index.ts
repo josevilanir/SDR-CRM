@@ -3,6 +3,7 @@ export interface Workspace {
   name: string;
   created_at: string;
   owner_id: string;
+  stage_transition_rules: Record<string, string[]>;
 }
 
 export interface Profile {
@@ -55,6 +56,7 @@ export interface FieldDefinition {
   workspace_id: string;
   name: string;
   type: 'text' | 'number' | 'boolean' | 'select';
+  is_required_at_stage: Record<string, boolean>;
   created_at: string;
 }
 

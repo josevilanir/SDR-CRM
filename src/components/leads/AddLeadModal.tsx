@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
-import { useLeads } from '../../hooks/useLeads';
 
 interface AddLeadModalProps {
   isOpen: boolean;
@@ -109,6 +108,16 @@ export function AddLeadModal({ isOpen, onClose, onLeadAdded, addLead }: AddLeadM
                 className="w-full bg-secondary border border-border rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-primary"
                 value={formData.job_title}
                 onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
+              />
+            </div>
+            <div className="col-span-2">
+              <label className="text-sm font-medium block mb-1">Origem do Lead</label>
+              <input
+                type="text"
+                placeholder="Ex: LinkedIn, Indicação, Site..."
+                className="w-full bg-secondary border border-border rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-primary"
+                value={formData.source}
+                onChange={(e) => setFormData({ ...formData, source: e.target.value })}
               />
             </div>
             <div className="col-span-2">

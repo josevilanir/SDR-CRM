@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Profile, Workspace } from '../types';
 
@@ -15,8 +15,12 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [loading, setLoading] = useState(true);
+  const isLoadedRef = useRef(false);
+  const isFetchingRef = useRef(false);
 
   const fetchWorkspaceData = useCallback(async () => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -24,6 +28,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       if (!user) {
         setProfile(null);
         setWorkspace(null);
+        isLoadedRef.current = false;
         return;
       }
 
@@ -36,6 +41,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       if (!profileData) {
         setProfile(null);
         setWorkspace(null);
+        isLoadedRef.current = false;
         return;
       }
 
@@ -48,20 +54,25 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle();
 
       setWorkspace(workspaceData ?? null);
+      isLoadedRef.current = !!workspaceData;
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
   }, []);
 
   useEffect(() => {
     fetchWorkspaceData();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // Só faz o fetch se o ID do usuário mudou de fato, ignorando refreshes de token/janela
-      if (session?.user?.id !== profile?.id) {
-        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-          fetchWorkspaceData();
-        }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN' && !isLoadedRef.current) {
+        fetchWorkspaceData();
+      } else if (event === 'SIGNED_OUT') {
+        isLoadedRef.current = false;
+        isFetchingRef.current = false;
+        setProfile(null);
+        setWorkspace(null);
+        setLoading(false);
       }
     });
 

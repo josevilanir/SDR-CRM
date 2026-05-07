@@ -76,6 +76,17 @@ export function useCustomFields(leadId?: string) {
     setFieldDefinitions(prev => prev.filter(f => f.id !== id));
   };
 
+  const updateFieldRequiredStages = async (id: string, is_required_at_stage: Record<string, boolean>) => {
+    const { error } = await supabase
+      .from('field_definitions')
+      .update({ is_required_at_stage })
+      .eq('id', id);
+    if (error) throw error;
+    setFieldDefinitions(prev =>
+      prev.map(f => f.id === id ? { ...f, is_required_at_stage } : f)
+    );
+  };
+
   const getValueForField = (fieldDefinitionId: string) =>
     customFieldValues.find(f => f.field_definition_id === fieldDefinitionId)?.value ?? '';
 
@@ -86,6 +97,7 @@ export function useCustomFields(leadId?: string) {
     upsertFieldValue,
     addFieldDefinition,
     deleteFieldDefinition,
+    updateFieldRequiredStages,
     getValueForField,
   };
 }

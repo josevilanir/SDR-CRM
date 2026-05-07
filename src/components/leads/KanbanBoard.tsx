@@ -3,8 +3,8 @@ import { useState } from 'react';
 import { KanbanColumn } from './KanbanColumn';
 import { LeadCard } from './LeadCard';
 import { LeadDetail } from './LeadDetail';
-import type { Lead } from '../../types';
-import { useLeads } from '../../hooks/useLeads';
+import { supabase } from '../../lib/supabase';
+import type { Lead, FieldDefinition } from '../../types';
 
 export const STAGES = [
   'Base',
@@ -16,7 +16,19 @@ export const STAGES = [
   'Reunião Agendada'
 ];
 
-export function KanbanBoard({ leads, loading, refresh, moveLead }: { leads: any[], loading: boolean, refresh: () => void, moveLead: (id: string, status: string) => Promise<void> }) {
+const FIELD_LABELS: Record<string, string> = {
+  email: 'E-mail', phone: 'Telefone', company: 'Empresa',
+  job_title: 'Cargo', source: 'Origem', notes: 'Observações',
+};
+
+export function KanbanBoard({ leads, loading, refresh, moveLead, fieldDefinitions = [], stageRules = {} }: {
+  leads: any[],
+  loading: boolean,
+  refresh: () => void,
+  moveLead: (id: string, status: string) => Promise<void>,
+  fieldDefinitions?: FieldDefinition[],
+  stageRules?: Record<string, string[]>,
+}) {
   const [activeLead, setActiveLead] = useState<Lead | null>(null);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
@@ -40,17 +52,35 @@ export function KanbanBoard({ leads, loading, refresh, moveLead }: { leads: any[
       const newStatus = over.id as string;
       const lead = leads.find(l => l.id === active.id);
 
-      // Requisito 5: Regras de Transição
-      if (newStatus === 'Lead Mapeado' || newStatus === 'Tentando Contato') {
-        if (!lead?.company || !lead?.job_title) {
-          alert(`Para mover para "${newStatus}", os campos Empresa e Cargo são obrigatórios.`);
-          return;
-        }
+      // Validação campos padrão — usa regras configuradas pelo usuário
+      const requiredStandardFields = stageRules[newStatus] ?? [];
+      const missingStandard = requiredStandardFields.filter(
+        (field) => !lead?.[field as keyof typeof lead]
+      );
+      if (missingStandard.length > 0) {
+        const labels = missingStandard.map(f => FIELD_LABELS[f] ?? f).join(', ');
+        alert(`Para mover para "${newStatus}", os seguintes campos são obrigatórios: ${labels}`);
+        return;
       }
 
-      if (newStatus === 'Qualificado' || newStatus === 'Reunião Agendada') {
-        if (!lead?.email && !lead?.phone) {
-          alert(`Para mover para "${newStatus}", é necessário ter E-mail ou Telefone.`);
+      // Validação campos personalizados configurados com is_required_at_stage
+      const requiredCustomFields = fieldDefinitions.filter(
+        fd => fd.is_required_at_stage?.[newStatus] === true
+      );
+
+      if (requiredCustomFields.length > 0) {
+        const { data: cfValues } = await supabase
+          .from('lead_custom_fields')
+          .select('field_definition_id, value')
+          .eq('lead_id', active.id);
+
+        const missing = requiredCustomFields.filter(fd => {
+          const val = cfValues?.find(cf => cf.field_definition_id === fd.id)?.value;
+          return !val || val.trim() === '';
+        });
+
+        if (missing.length > 0) {
+          alert(`Para mover para "${newStatus}", os seguintes campos são obrigatórios: ${missing.map(f => f.name).join(', ')}`);
           return;
         }
       }

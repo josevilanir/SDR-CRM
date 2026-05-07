@@ -1,73 +1,70 @@
-# React + TypeScript + Vite
+# SDR CRM + AI Automation 🚀
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Um CRM especializado para equipes de Pré-Vendas (SDR) que utiliza Inteligência Artificial para hiper-personalizar o alcance de vendas em escala.
 
-Currently, two official plugins are available:
+![Status do Projeto](https://img.shields.io/badge/Status-Finalizado-success)
+![Tech Stack](https://img.shields.io/badge/Stack-React%20%7C%20Vite%20%7C%20Supabase%20%7C%20Gemini-blue)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🌟 Diferenciais do Projeto
 
-## React Compiler
+Este projeto vai além de um simples CRUD, implementando uma arquitetura moderna e funcionalidades de IA generativa:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Automação por Gatilhos (The "Magic" Flow)**: Ao mover um lead para uma etapa específica do Kanban, um *Database Webhook* dispara uma *Edge Function* que gera sugestões de mensagens automaticamente via Gemini 1.5 Flash.
+- **Arquitetura Multi-tenant**: Isolamento total de dados entre diferentes empresas/workspaces usando *Row Level Security (RLS)* nativo do Postgres.
+- **Campos Personalizados Dinâmicos**: Permite definir atributos específicos por workspace que a IA utiliza para contextualizar as mensagens.
+- **UI/UX Premium**: Interface em Dark Mode com Glassmorphism, animações suaves e foco em produtividade.
 
-## Expanding the ESLint configuration
+## 🛠️ Stack Tecnológica
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **Frontend**: React 18, Vite, TypeScript.
+- **Estilização**: Tailwind CSS v4 (utilizando o novo motor de alto desempenho).
+- **Backend/Banco**: Supabase (PostgreSQL).
+- **Inteligência Artificial**: Google Gemini 1.5 Flash.
+- **Infraestrutura**: Supabase Edge Functions (Deno runtime).
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 🚀 Como Executar
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### Pré-requisitos
+- Node.js 18+
+- Supabase CLI (opcional para deploy)
+- Chave de API do Google AI Studio (Gemini)
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Configuração Local
+1. Clone o repositório.
+2. Instale as dependências:
+   ```bash
+   npm install
+   ```
+3. Configure o arquivo `.env` baseado no `.env.example`:
+   ```env
+   VITE_SUPABASE_URL=seu_projeto_url
+   VITE_SUPABASE_ANON_KEY=sua_anon_key
+   VITE_GEMINI_API_KEY=sua_chave_gemini
+   ```
+4. Inicie o servidor de desenvolvimento:
+   ```bash
+   npm run dev
+   ```
+
+### Deploy do Backend (Supabase)
+Para habilitar a automação completa, é necessário realizar o deploy das funções:
+```bash
+npx supabase link --project-ref seu_project_id
+npx supabase db push
+npx supabase functions deploy generate-message
+npx supabase functions deploy handle-lead-automation
+npx supabase secrets set GEMINI_API_KEY=sua_chave
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 📈 Estrutura de Banco de Dados
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+O projeto utiliza uma estrutura relacional otimizada:
+- `workspaces`: Unidade principal de isolamento.
+- `profiles`: Usuários vinculados a workspaces.
+- `leads`: Entidade principal de vendas.
+- `field_definitions`: Metadados para campos customizados.
+- `campaigns`: Configurações de contexto e gatilhos para a IA.
+- `messages`: Histórico de variações geradas pela IA.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+---
+Desenvolvido como prova técnica para o desafio de SDR CRM com IA.

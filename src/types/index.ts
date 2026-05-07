@@ -45,6 +45,7 @@ export interface Message {
   lead_id: string;
   campaign_id: string;
   content: string;
+  label: string | null;
   status: 'draft' | 'sent';
   created_at: string;
 }

@@ -1,20 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   X, Mail, Phone, Building2, User, Save, Megaphone,
   Sparkles, Copy, Send, ChevronDown, Plus, Loader2,
-  Check, AlertCircle, SlidersHorizontal
+  Check, AlertCircle, SlidersHorizontal, RefreshCw, Bot
 } from 'lucide-react';
 import { useLeads } from '../../hooks/useLeads';
 import { useCampaigns } from '../../hooks/useCampaigns';
 import { useCustomFields } from '../../hooks/useCustomFields';
 import { supabase } from '../../lib/supabase';
-import type { Lead, Campaign } from '../../types';
+import type { Lead, Campaign, Message } from '../../types';
 import { cn } from '../../utils/cn';
-
-interface MessageVariation {
-  label: string;
-  text: string;
-}
 
 interface LeadDetailProps {
   lead: Lead | null;
@@ -28,35 +23,65 @@ export function LeadDetail({ lead, onClose, onLeadUpdated }: LeadDetailProps) {
   const { fieldDefinitions, getValueForField, upsertFieldValue, addFieldDefinition } = useCustomFields(lead?.id);
 
   const [formData, setFormData] = useState<Partial<Lead>>({});
-  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  // AI state
+  // Saved messages from DB
+  const [savedMessages, setSavedMessages] = useState<Message[]>([]);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+
+  // Manual generator state
+  const [showGenerator, setShowGenerator] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [generating, setGenerating] = useState(false);
-  const [variations, setVariations] = useState<MessageVariation[]>([]);
   const [aiError, setAiError] = useState<string | null>(null);
-  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
-  const [sending, setSending] = useState<number | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [sendingId, setSendingId] = useState<string | null>(null);
 
-  // Custom fields new field UI
+  // Custom fields UI
   const [addingField, setAddingField] = useState(false);
   const [newFieldName, setNewFieldName] = useState('');
+
+  const loadMessages = useCallback(async (leadId: string) => {
+    setLoadingMessages(true);
+    try {
+      const { data } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('lead_id', leadId)
+        .eq('status', 'draft')
+        .order('created_at', { ascending: false });
+      setSavedMessages(data ?? []);
+    } finally {
+      setLoadingMessages(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (lead) {
       setFormData(lead);
-      setVariations([]);
       setAiError(null);
       setSelectedCampaign(null);
+      setShowGenerator(false);
+      loadMessages(lead.id);
     }
-  }, [lead]);
+  }, [lead, loadMessages]);
 
   if (!lead) return null;
 
-  const activeCampaigns = campaigns.filter(c => c.is_active);
+  const activeCampaigns = campaigns.filter((c) => c.is_active);
+
+  const getCampaignName = (campaignId: string) =>
+    campaigns.find((c) => c.id === campaignId)?.name ?? 'Campanha';
+
+  // Group draft messages by campaign for display
+  const messagesByCampaign = savedMessages.reduce<Record<string, Message[]>>((acc, msg) => {
+    if (!acc[msg.campaign_id]) acc[msg.campaign_id] = [];
+    acc[msg.campaign_id].push(msg);
+    return acc;
+  }, {});
 
   const handleSave = async () => {
-    setLoading(true);
+    setSaving(true);
     try {
       await updateLead(lead.id, formData);
       onLeadUpdated?.();
@@ -65,7 +90,7 @@ export function LeadDetail({ lead, onClose, onLeadUpdated }: LeadDetailProps) {
       console.error(err);
       alert('Erro ao atualizar lead');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
@@ -73,7 +98,6 @@ export function LeadDetail({ lead, onClose, onLeadUpdated }: LeadDetailProps) {
     if (!selectedCampaign) return;
     setGenerating(true);
     setAiError(null);
-    setVariations([]);
 
     try {
       const customFieldsMap: Record<string, string> = {};
@@ -111,12 +135,32 @@ export function LeadDetail({ lead, onClose, onLeadUpdated }: LeadDetailProps) {
       });
 
       const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? 'Erro ao gerar mensagens');
 
-      if (!response.ok) {
-        throw new Error(result.error || 'Erro ao gerar mensagens');
-      }
+      const newVariations: { label: string; text: string }[] = result.variations ?? [];
 
-      setVariations(result.variations || []);
+      // Delete old drafts for this campaign+lead before saving new ones
+      await supabase
+        .from('messages')
+        .delete()
+        .eq('lead_id', lead.id)
+        .eq('campaign_id', selectedCampaign.id)
+        .eq('status', 'draft');
+
+      // Persist new variations
+      await supabase.from('messages').insert(
+        newVariations.map((v) => ({
+          lead_id: lead.id,
+          campaign_id: selectedCampaign.id,
+          content: v.text,
+          label: v.label,
+          status: 'draft',
+        }))
+      );
+
+      await loadMessages(lead.id);
+      setShowGenerator(false);
+      setSelectedCampaign(null);
     } catch (err) {
       setAiError(err instanceof Error ? err.message : 'Erro inesperado ao chamar a IA');
     } finally {
@@ -124,23 +168,23 @@ export function LeadDetail({ lead, onClose, onLeadUpdated }: LeadDetailProps) {
     }
   };
 
-  const handleCopy = async (text: string, idx: number) => {
+  const handleCopy = async (text: string, messageId: string) => {
     await navigator.clipboard.writeText(text);
-    setCopiedIdx(idx);
-    setTimeout(() => setCopiedIdx(null), 2000);
+    setCopiedId(messageId);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handleSend = async (idx: number) => {
-    setSending(idx);
+  const handleSend = async (messageId: string) => {
+    setSendingId(messageId);
     try {
+      await supabase.from('messages').update({ status: 'sent' }).eq('id', messageId);
       await updateLead(lead.id, { status: 'Tentando Contato', updated_at: new Date().toISOString() });
-      await new Promise(r => setTimeout(r, 600));
       onLeadUpdated?.();
       onClose();
     } catch (err) {
       console.error(err);
     } finally {
-      setSending(null);
+      setSendingId(null);
     }
   };
 
@@ -150,6 +194,8 @@ export function LeadDetail({ lead, onClose, onLeadUpdated }: LeadDetailProps) {
     setNewFieldName('');
     setAddingField(false);
   };
+
+  const hasSavedMessages = savedMessages.length > 0;
 
   return (
     <div className={cn(
@@ -184,40 +230,40 @@ export function LeadDetail({ lead, onClose, onLeadUpdated }: LeadDetailProps) {
                 <input
                   type="text"
                   className="w-full bg-secondary/50 border border-border rounded-lg p-2 text-sm focus:ring-1 focus:ring-primary outline-none"
-                  value={formData.name || ''}
+                  value={formData.name ?? ''}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1">
+                <label className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
                   <Mail size={10} /> E-mail
                 </label>
                 <input
                   type="email"
                   className="w-full bg-secondary/50 border border-border rounded-lg p-2 text-sm focus:ring-1 focus:ring-primary outline-none"
-                  value={formData.email || ''}
+                  value={formData.email ?? ''}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1">
+                <label className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
                   <Phone size={10} /> Telefone
                 </label>
                 <input
                   type="text"
                   className="w-full bg-secondary/50 border border-border rounded-lg p-2 text-sm focus:ring-1 focus:ring-primary outline-none"
-                  value={formData.phone || ''}
+                  value={formData.phone ?? ''}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1">
+                <label className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
                   <Building2 size={10} /> Empresa
                 </label>
                 <input
                   type="text"
                   className="w-full bg-secondary/50 border border-border rounded-lg p-2 text-sm focus:ring-1 focus:ring-primary outline-none"
-                  value={formData.company || ''}
+                  value={formData.company ?? ''}
                   onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                 />
               </div>
@@ -226,7 +272,7 @@ export function LeadDetail({ lead, onClose, onLeadUpdated }: LeadDetailProps) {
                 <input
                   type="text"
                   className="w-full bg-secondary/50 border border-border rounded-lg p-2 text-sm focus:ring-1 focus:ring-primary outline-none"
-                  value={formData.job_title || ''}
+                  value={formData.job_title ?? ''}
                   onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
                 />
               </div>
@@ -276,7 +322,10 @@ export function LeadDetail({ lead, onClose, onLeadUpdated }: LeadDetailProps) {
                   className="flex-1 bg-secondary/50 border border-primary/50 rounded-lg p-2 text-sm focus:ring-1 focus:ring-primary outline-none"
                   value={newFieldName}
                   onChange={(e) => setNewFieldName(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') handleAddField(); if (e.key === 'Escape') setAddingField(false); }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleAddField();
+                    if (e.key === 'Escape') setAddingField(false);
+                  }}
                 />
                 <button onClick={handleAddField} className="p-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
                   <Check size={14} />
@@ -293,7 +342,7 @@ export function LeadDetail({ lead, onClose, onLeadUpdated }: LeadDetailProps) {
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Notas e Observações</h3>
             <textarea
               className="w-full bg-secondary/50 border border-border rounded-lg p-3 text-sm focus:ring-1 focus:ring-primary outline-none h-28 resize-none"
-              value={formData.notes || ''}
+              value={formData.notes ?? ''}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               placeholder="Adicione observações sobre o lead..."
             />
@@ -301,104 +350,129 @@ export function LeadDetail({ lead, onClose, onLeadUpdated }: LeadDetailProps) {
 
           {/* IA - Mensagens */}
           <section className="space-y-4 bg-primary/5 p-5 rounded-2xl border border-primary/15">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-primary/20 flex items-center justify-center">
-                <Sparkles size={14} className="text-primary" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-primary/20 flex items-center justify-center">
+                  <Sparkles size={14} className="text-primary" />
+                </div>
+                <h3 className="text-sm font-semibold text-primary uppercase tracking-wider">
+                  Mensagens com IA
+                </h3>
               </div>
-              <h3 className="text-sm font-semibold text-primary uppercase tracking-wider">
-                Mensagens com IA
-              </h3>
+              {hasSavedMessages && (
+                <button
+                  onClick={() => { setShowGenerator(true); setSelectedCampaign(null); setAiError(null); }}
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+                >
+                  <RefreshCw size={12} /> Regenerar
+                </button>
+              )}
             </div>
 
-            {/* Campaign selector */}
-            {activeCampaigns.length === 0 ? (
-              <p className="text-xs text-muted-foreground italic">
-                Nenhuma campanha ativa. Crie uma campanha para gerar mensagens.
-              </p>
-            ) : (
-              <>
-                <div className="relative">
-                  <select
-                    className="w-full bg-background/60 border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-1 focus:ring-primary appearance-none cursor-pointer"
-                    value={selectedCampaign?.id ?? ''}
-                    onChange={(e) => {
-                      const camp = activeCampaigns.find(c => c.id === e.target.value) ?? null;
-                      setSelectedCampaign(camp);
-                      setVariations([]);
-                      setAiError(null);
-                    }}
-                  >
-                    <option value="">Selecione uma campanha...</option>
-                    {activeCampaigns.map(c => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                  <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-                </div>
+            {/* Pre-generated messages from DB */}
+            {loadingMessages ? (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
+                <Loader2 size={13} className="animate-spin" /> Carregando mensagens pré-geradas...
+              </div>
+            ) : hasSavedMessages ? (
+              <div className="space-y-5">
+                {Object.entries(messagesByCampaign).map(([campaignId, msgs]) => (
+                  <div key={campaignId} className="space-y-3">
+                    <div className="flex items-center gap-1.5">
+                      <Bot size={12} className="text-primary" />
+                      <span className="text-xs font-semibold text-primary/80 uppercase tracking-wider">
+                        {getCampaignName(campaignId)}
+                      </span>
+                      <span className="text-xs text-muted-foreground ml-auto">gerado automaticamente</span>
+                    </div>
 
-                <button
-                  onClick={handleGenerateMessages}
-                  disabled={!selectedCampaign || generating}
-                  className={cn(
-                    "w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all",
-                    selectedCampaign && !generating
-                      ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20"
-                      : "bg-secondary text-muted-foreground cursor-not-allowed"
-                  )}
-                >
-                  {generating ? (
-                    <><Loader2 size={15} className="animate-spin" /> Gerando...</>
-                  ) : (
-                    <><Megaphone size={15} /> Gerar Sugestões</>
-                  )}
-                </button>
+                    {msgs.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className="bg-background/60 border border-border/60 rounded-xl p-4 space-y-3 hover:border-primary/30 transition-colors"
+                      >
+                        {msg.label && (
+                          <span className="text-xs font-semibold text-primary uppercase tracking-wider">
+                            {msg.label}
+                          </span>
+                        )}
+                        <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                        <div className="flex gap-2 pt-1">
+                          <button
+                            onClick={() => handleCopy(msg.content, msg.id)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-border rounded-lg hover:bg-secondary transition-colors"
+                          >
+                            {copiedId === msg.id
+                              ? <><Check size={12} className="text-emerald-500" /> Copiado!</>
+                              : <><Copy size={12} /> Copiar</>}
+                          </button>
+                          <button
+                            onClick={() => handleSend(msg.id)}
+                            disabled={sendingId !== null}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-primary/10 text-primary border border-primary/20 rounded-lg hover:bg-primary hover:text-primary-foreground transition-all"
+                          >
+                            {sendingId === msg.id
+                              ? <><Loader2 size={12} className="animate-spin" /> Enviando...</>
+                              : <><Send size={12} /> Enviar</>}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
+            {/* Manual generator — shown when no pre-generated messages OR user clicked Regenerar */}
+            {(!hasSavedMessages || showGenerator) && !loadingMessages && (
+              <>
+                {activeCampaigns.length === 0 ? (
+                  <p className="text-xs text-muted-foreground italic">
+                    Nenhuma campanha ativa. Crie uma campanha para gerar mensagens.
+                  </p>
+                ) : (
+                  <>
+                    <div className="relative">
+                      <select
+                        className="w-full bg-background/60 border border-border rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-1 focus:ring-primary appearance-none cursor-pointer"
+                        value={selectedCampaign?.id ?? ''}
+                        onChange={(e) => {
+                          const camp = activeCampaigns.find((c) => c.id === e.target.value) ?? null;
+                          setSelectedCampaign(camp);
+                          setAiError(null);
+                        }}
+                      >
+                        <option value="">Selecione uma campanha...</option>
+                        {activeCampaigns.map((c) => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                    </div>
+
+                    <button
+                      onClick={handleGenerateMessages}
+                      disabled={!selectedCampaign || generating}
+                      className={cn(
+                        "w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all",
+                        selectedCampaign && !generating
+                          ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20"
+                          : "bg-secondary text-muted-foreground cursor-not-allowed"
+                      )}
+                    >
+                      {generating
+                        ? <><Loader2 size={15} className="animate-spin" /> Gerando...</>
+                        : <><Megaphone size={15} /> {hasSavedMessages ? 'Regenerar Sugestões' : 'Gerar Sugestões'}</>}
+                    </button>
+                  </>
+                )}
               </>
             )}
 
-            {/* Error state */}
             {aiError && (
               <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
                 <AlertCircle size={14} className="text-destructive flex-shrink-0 mt-0.5" />
                 <p className="text-xs text-destructive">{aiError}</p>
-              </div>
-            )}
-
-            {/* Generated variations */}
-            {variations.length > 0 && (
-              <div className="space-y-3">
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                  {variations.length} variações geradas
-                </p>
-                {variations.map((v, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-background/60 border border-border/60 rounded-xl p-4 space-y-3 hover:border-primary/30 transition-colors"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-primary uppercase tracking-wider">{v.label}</span>
-                    </div>
-                    <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">{v.text}</p>
-                    <div className="flex gap-2 pt-1">
-                      <button
-                        onClick={() => handleCopy(v.text, idx)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-border rounded-lg hover:bg-secondary transition-colors"
-                      >
-                        {copiedIdx === idx
-                          ? <><Check size={12} className="text-emerald-500" /> Copiado!</>
-                          : <><Copy size={12} /> Copiar</>}
-                      </button>
-                      <button
-                        onClick={() => handleSend(idx)}
-                        disabled={sending !== null}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-primary/10 text-primary border border-primary/20 rounded-lg hover:bg-primary hover:text-primary-foreground transition-all"
-                      >
-                        {sending === idx
-                          ? <><Loader2 size={12} className="animate-spin" /> Enviando...</>
-                          : <><Send size={12} /> Enviar</>}
-                      </button>
-                    </div>
-                  </div>
-                ))}
               </div>
             )}
           </section>
@@ -408,11 +482,11 @@ export function LeadDetail({ lead, onClose, onLeadUpdated }: LeadDetailProps) {
         <div className="p-6 border-t border-border flex-shrink-0">
           <button
             onClick={handleSave}
-            disabled={loading}
+            disabled={saving}
             className="btn-primary w-full gap-2"
           >
             <Save size={18} />
-            {loading ? 'Salvando...' : 'Salvar Alterações'}
+            {saving ? 'Salvando...' : 'Salvar Alterações'}
           </button>
         </div>
       </div>

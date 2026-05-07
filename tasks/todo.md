@@ -33,11 +33,26 @@
 - [ ] Configurar GEMINI_API_KEY: supabase secrets set GEMINI_API_KEY=<sua-chave>
 
 ## Fase 5: Automação (Diferencial)
-- [ ] Configurar Database Webhooks para mudança de etapa
-- [ ] Implementar Edge Function de gatilho automático
-- [ ] Testar geração em background
+- [x] Criar Edge Function `handle-lead-automation` — supabase/functions/handle-lead-automation/index.ts
+  - Recebe webhook INSERT/UPDATE de leads
+  - Busca campanhas ativas com trigger_stage = novo status
+  - Chama Gemini e salva 3 variações em `messages`
+  - Anti-loop: ignora se já gerou nos últimos 5 min para o mesmo par lead+campanha
+- [x] Gerar SQL de configuração do Database Webhook — supabase/webhook_setup.sql
+  - Trigger `on_lead_status_change` na tabela `leads` (INSERT + UPDATE de status)
+  - Requer: pg_net, substituir <YOUR_SUPABASE_URL> e <YOUR_SERVICE_ROLE_KEY>
+- [x] Adicionar coluna `label` à tabela messages — supabase/migrations/20240509_messages_label.sql
+- [x] Atualizar LeadDetail para exibir mensagens pré-geradas ao abrir o lead
+  - Carrega mensagens `draft` do banco automaticamente
+  - "Regenerar" permite gerar novas (substitui as antigas)
+  - "Enviar" atualiza status da mensagem para `sent` e move lead para "Tentando Contato"
+- [ ] Aplicar migration 20240509_messages_label.sql no Supabase (manual)
+- [ ] Executar supabase/webhook_setup.sql no SQL Editor do Supabase (manual — substituir placeholders)
+- [ ] Deployar Edge Function: `supabase functions deploy handle-lead-automation`
 
 ## Fase 6: Dashboard e Polimento
-- [ ] Criar Dashboard de métricas (Leads por etapa, totais)
+- [x] Criar Dashboard de métricas reais — src/pages/Dashboard.tsx
+  - Total de Leads, Mensagens geradas pela IA, Etapas ativas
+  - Gráfico de barras: Leads por Etapa (todas as 7 etapas do funil)
 - [ ] Aplicar design premium (Glassmorphism, Animações)
 - [ ] Finalizar documentação (README) e vídeo

@@ -3,7 +3,7 @@ create extension if not exists "uuid-ossp";
 
 -- 1. Workspaces
 create table workspaces (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   name text not null,
   created_at timestamp with time zone default now(),
   owner_id uuid references auth.users(id) not null
@@ -20,7 +20,7 @@ create table profiles (
 
 -- 3. Field Definitions (Custom Fields per Workspace)
 create table field_definitions (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   workspace_id uuid references workspaces(id) on delete cascade,
   name text not null,
   type text check (type in ('text', 'number', 'boolean', 'select')) default 'text',
@@ -30,7 +30,7 @@ create table field_definitions (
 
 -- 4. Leads
 create table leads (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   workspace_id uuid references workspaces(id) on delete cascade,
   name text not null,
   email text,
@@ -47,7 +47,7 @@ create table leads (
 
 -- 5. Lead Custom Fields
 create table lead_custom_fields (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   lead_id uuid references leads(id) on delete cascade,
   field_definition_id uuid references field_definitions(id) on delete cascade,
   value text,
@@ -56,7 +56,7 @@ create table lead_custom_fields (
 
 -- 6. Campaigns
 create table campaigns (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   workspace_id uuid references workspaces(id) on delete cascade,
   name text not null,
   context text,
@@ -68,7 +68,7 @@ create table campaigns (
 
 -- 7. Generated Messages
 create table messages (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   lead_id uuid references leads(id) on delete cascade,
   campaign_id uuid references campaigns(id) on delete cascade,
   content text not null,

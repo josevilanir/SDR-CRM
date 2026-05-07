@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   X, Mail, Phone, Building2, User, Save, Megaphone,
   Sparkles, Copy, Send, ChevronDown, Plus, Loader2,
-  Check, AlertCircle, SlidersHorizontal, RefreshCw, Bot
+  Check, AlertCircle, SlidersHorizontal, RefreshCw, Bot, Trash2, MinusCircle
 } from 'lucide-react';
 import { useLeads } from '../../hooks/useLeads';
 import { useCampaigns } from '../../hooks/useCampaigns';
@@ -18,9 +18,9 @@ interface LeadDetailProps {
 }
 
 export function LeadDetail({ lead, onClose, onLeadUpdated }: LeadDetailProps) {
-  const { updateLead } = useLeads();
+  const { updateLead, deleteLead } = useLeads();
   const { campaigns } = useCampaigns();
-  const { fieldDefinitions, getValueForField, upsertFieldValue, addFieldDefinition } = useCustomFields(lead?.id);
+  const { fieldDefinitions, getValueForField, upsertFieldValue, addFieldDefinition, deleteFieldDefinition } = useCustomFields(lead?.id);
 
   const [formData, setFormData] = useState<Partial<Lead>>({});
   const [saving, setSaving] = useState(false);
@@ -188,6 +188,23 @@ export function LeadDetail({ lead, onClose, onLeadUpdated }: LeadDetailProps) {
     }
   };
 
+  const handleDelete = async () => {
+    if (!lead) return;
+    if (!confirm('Tem certeza que deseja excluir este lead? Todas as mensagens geradas também serão apagadas.')) return;
+    
+    setSaving(true);
+    try {
+      await deleteLead(lead.id);
+      onLeadUpdated?.();
+      onClose();
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao excluir lead');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleAddField = async () => {
     if (!newFieldName.trim()) return;
     await addFieldDefinition(newFieldName.trim(), 'text');
@@ -280,7 +297,7 @@ export function LeadDetail({ lead, onClose, onLeadUpdated }: LeadDetailProps) {
           </section>
 
           {/* Campos Personalizados */}
-          <section className="space-y-3">
+          <section className="space-y-3" key={`custom-fields-${lead.id}`}>
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                 <SlidersHorizontal size={12} /> Campos Personalizados
@@ -300,8 +317,21 @@ export function LeadDetail({ lead, onClose, onLeadUpdated }: LeadDetailProps) {
             ) : (
               <div className="grid grid-cols-2 gap-3">
                 {fieldDefinitions.map((def) => (
-                  <div key={def.id}>
-                    <label className="text-xs text-muted-foreground mb-1 block">{def.name}</label>
+                  <div key={def.id} className="group relative">
+                    <label className="text-xs text-muted-foreground mb-1 flex items-center justify-between">
+                      {def.name}
+                      <button
+                        onClick={async () => {
+                          if (confirm(`Excluir o campo "${def.name}" de todos os leads?`)) {
+                            await deleteFieldDefinition(def.id);
+                          }
+                        }}
+                        className="opacity-0 group-hover:opacity-100 text-destructive/60 hover:text-destructive transition-all"
+                        title="Remover campo"
+                      >
+                        <MinusCircle size={12} />
+                      </button>
+                    </label>
                     <input
                       type={def.type === 'number' ? 'number' : 'text'}
                       className="w-full bg-secondary/50 border border-border rounded-lg p-2 text-sm focus:ring-1 focus:ring-primary outline-none"
@@ -479,11 +509,19 @@ export function LeadDetail({ lead, onClose, onLeadUpdated }: LeadDetailProps) {
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-border flex-shrink-0">
+        <div className="p-6 border-t border-border flex-shrink-0 flex gap-3">
+          <button
+            onClick={handleDelete}
+            disabled={saving}
+            className="p-2.5 border border-destructive/20 text-destructive hover:bg-destructive/10 rounded-lg transition-colors flex items-center justify-center"
+            title="Excluir Lead"
+          >
+            <Trash2 size={18} />
+          </button>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="btn-primary w-full gap-2"
+            className="btn-primary flex-1 gap-2"
           >
             <Save size={18} />
             {saving ? 'Salvando...' : 'Salvar Alterações'}

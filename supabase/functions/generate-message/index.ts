@@ -63,14 +63,26 @@ Instruções:
 2. Cada mensagem deve ser personalizada com os dados reais do lead
 3. Mensagens curtas (máximo 5 linhas), sem jargões excessivos
 4. Não inclua assunto de e-mail — apenas o corpo da mensagem
-5. Retorne SOMENTE um JSON válido neste formato, sem markdown ou texto adicional:
-{
-  "variations": [
-    {"label": "Direta", "text": "..."},
-    {"label": "Consultiva", "text": "..."},
-    {"label": "Provocativa", "text": "..."}
-  ]
-}`;
+5. Retorne APENAS o JSON puro a seguir, sem markdown, sem blocos de código, sem texto antes ou depois. Todas as aspas dentro dos valores de "text" DEVEM ser escapadas com \\\":
+{"variations":[{"label":"Direta","text":"..."},{"label":"Consultiva","text":"..."},{"label":"Provocativa","text":"..."}]}`;
+}
+
+function parseGeminiJson(raw: string): unknown {
+  let text = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+
+  const start = text.indexOf("{");
+  const end   = text.lastIndexOf("}");
+  if (start !== -1 && end > start) {
+    text = text.slice(start, end + 1);
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    // Strip invisible control characters (U+0000–U+001F except tab/LF/CR) and retry
+    const sanitized = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
+    return JSON.parse(sanitized);
+  }
 }
 
 serve(async (req: Request) => {
@@ -100,15 +112,16 @@ serve(async (req: Request) => {
     const prompt = buildPrompt(lead, campaign);
 
     const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             temperature: 0.9,
-            maxOutputTokens: 1024,
+            maxOutputTokens: 2048,
+            responseMimeType: "application/json",
           },
         }),
       }
@@ -125,9 +138,7 @@ serve(async (req: Request) => {
     const geminiData = await geminiResponse.json();
     const rawText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 
-    // Strip markdown code fences if present
-    const cleaned = rawText.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-    const parsed = JSON.parse(cleaned);
+    const parsed = parseGeminiJson(rawText);
 
     return new Response(
       JSON.stringify(parsed),

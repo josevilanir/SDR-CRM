@@ -56,8 +56,13 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     fetchWorkspaceData();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      fetchWorkspaceData();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Só faz o fetch se o ID do usuário mudou de fato, ignorando refreshes de token/janela
+      if (session?.user?.id !== profile?.id) {
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+          fetchWorkspaceData();
+        }
+      }
     });
 
     return () => subscription.unsubscribe();

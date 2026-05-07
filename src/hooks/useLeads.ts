@@ -60,12 +60,23 @@ export function useLeads() {
     await updateLead(id, { status: newStatus, updated_at: new Date().toISOString() });
   };
 
+  const deleteLead = async (id: string) => {
+    const { error } = await supabase
+      .from('leads')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    setLeads(leads.filter(l => l.id !== id));
+  };
+
   return {
     leads,
     loading,
     addLead,
     updateLead,
     moveLead,
+    deleteLead,
     refresh: fetchLeads
   };
 }

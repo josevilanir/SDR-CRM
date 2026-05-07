@@ -2,8 +2,10 @@ import { KanbanBoard } from '../components/leads/KanbanBoard';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { AddLeadModal } from '../components/leads/AddLeadModal';
+import { useLeads } from '../hooks/useLeads';
 
 export function Kanban() {
+  const { leads, loading, refresh, moveLead, addLead } = useLeads();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   return (
@@ -19,12 +21,14 @@ export function Kanban() {
       </div>
       
       <div className="flex-1 min-h-0">
-        <KanbanBoard />
+        <KanbanBoard leads={leads} loading={loading} refresh={refresh} moveLead={moveLead} />
       </div>
 
       <AddLeadModal 
         isOpen={isAddModalOpen} 
         onClose={() => setIsAddModalOpen(false)} 
+        onLeadAdded={refresh}
+        addLead={addLead}
       />
     </div>
   );

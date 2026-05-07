@@ -23,6 +23,7 @@ export function useCustomFields(leadId?: string) {
   const fetchCustomFieldValues = useCallback(async () => {
     if (!leadId) {
       setCustomFieldValues([]);
+      setLoading(false); // Garante que o loading pare se não houver lead
       return;
     }
     const { data, error } = await supabase
@@ -35,6 +36,9 @@ export function useCustomFields(leadId?: string) {
 
   useEffect(() => {
     setLoading(true);
+    // Limpa os valores antigos imediatamente para evitar "vazamento" entre leads
+    setCustomFieldValues([]); 
+    
     Promise.all([fetchFieldDefinitions(), fetchCustomFieldValues()]).finally(() => setLoading(false));
   }, [fetchFieldDefinitions, fetchCustomFieldValues]);
 

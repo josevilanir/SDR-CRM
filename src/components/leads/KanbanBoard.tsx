@@ -16,8 +16,7 @@ export const STAGES = [
   'Reunião Agendada'
 ];
 
-export function KanbanBoard() {
-  const { leads, moveLead, loading, refresh: fetchLeads } = useLeads();
+export function KanbanBoard({ leads, loading, refresh, moveLead }: { leads: any[], loading: boolean, refresh: () => void, moveLead: (id: string, status: string) => Promise<void> }) {
   const [activeLead, setActiveLead] = useState<Lead | null>(null);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
@@ -87,7 +86,7 @@ export function KanbanBoard() {
       <LeadDetail
         lead={selectedLead}
         onClose={() => setSelectedLead(null)}
-        onLeadUpdated={() => { setSelectedLead(null); fetchLeads(); }}
+        onLeadUpdated={() => { setSelectedLead(null); refresh(); }}
       />
     </>
   );

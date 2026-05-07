@@ -5,10 +5,11 @@ import { useLeads } from '../../hooks/useLeads';
 interface AddLeadModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onLeadAdded?: () => void;
+  addLead: (lead: any) => Promise<any>;
 }
 
-export function AddLeadModal({ isOpen, onClose }: AddLeadModalProps) {
-  const { addLead } = useLeads();
+export function AddLeadModal({ isOpen, onClose, onLeadAdded, addLead }: AddLeadModalProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -31,6 +32,7 @@ export function AddLeadModal({ isOpen, onClose }: AddLeadModalProps) {
         status: 'Base',
         assigned_to: null
       });
+      onLeadAdded?.();
       onClose();
       setFormData({
         name: '',

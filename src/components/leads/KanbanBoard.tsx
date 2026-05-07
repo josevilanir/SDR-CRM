@@ -5,16 +5,9 @@ import { LeadCard } from './LeadCard';
 import { LeadDetail } from './LeadDetail';
 import { supabase } from '../../lib/supabase';
 import type { Lead, FieldDefinition } from '../../types';
+import { STAGES } from '../../constants/stages';
 
-export const STAGES = [
-  'Base',
-  'Lead Mapeado',
-  'Tentando Contato',
-  'Conexão Iniciada',
-  'Desqualificado',
-  'Qualificado',
-  'Reunião Agendada'
-];
+export { STAGES };
 
 const FIELD_LABELS: Record<string, string> = {
   email: 'E-mail', phone: 'Telefone', company: 'Empresa',

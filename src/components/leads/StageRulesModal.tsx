@@ -1,16 +1,7 @@
 import { useState } from 'react';
 import { X, Save, Settings2 } from 'lucide-react';
 import { cn } from '../../utils/cn';
-
-const STAGES = [
-  'Base',
-  'Lead Mapeado',
-  'Tentando Contato',
-  'Conexão Iniciada',
-  'Desqualificado',
-  'Qualificado',
-  'Reunião Agendada',
-];
+import { STAGES } from '../../constants/stages';
 
 const STANDARD_FIELDS: { key: string; label: string }[] = [
   { key: 'email', label: 'E-mail' },

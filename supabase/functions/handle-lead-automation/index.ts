@@ -148,14 +148,14 @@ serve(async (req: Request) => {
     }
 
     for (const campaign of campaigns as CampaignRecord[]) {
-      // Anti-loop guard: skip if messages were already generated for this pair in the last 5 minutes
-      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      // Anti-loop guard: skip if any messages (draft or sent) exist for this pair in the last hour
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
       const { data: recent } = await supabase
         .from("messages")
         .select("id")
         .eq("lead_id", leadId)
         .eq("campaign_id", campaign.id)
-        .gte("created_at", fiveMinutesAgo)
+        .gte("created_at", oneHourAgo)
         .limit(1);
 
       if (recent && recent.length > 0) {

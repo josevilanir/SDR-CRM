@@ -1,5 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
+import { useWorkspace } from '../../contexts/WorkspaceContext';
+import type { Profile } from '../../types';
 
 interface AddLeadModalProps {
   isOpen: boolean;
@@ -9,7 +12,9 @@ interface AddLeadModalProps {
 }
 
 export function AddLeadModal({ isOpen, onClose, onLeadAdded, addLead }: AddLeadModalProps) {
+  const { workspace } = useWorkspace();
   const [loading, setLoading] = useState(false);
+  const [workspaceMembers, setWorkspaceMembers] = useState<Profile[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -17,8 +22,18 @@ export function AddLeadModal({ isOpen, onClose, onLeadAdded, addLead }: AddLeadM
     company: '',
     job_title: '',
     source: '',
-    notes: ''
+    notes: '',
+    assigned_to: '',
   });
+
+  useEffect(() => {
+    if (!workspace || !isOpen) return;
+    supabase
+      .from('profiles')
+      .select('*')
+      .eq('workspace_id', workspace.id)
+      .then(({ data }) => setWorkspaceMembers(data ?? []));
+  }, [workspace, isOpen]);
 
   if (!isOpen) return null;
 
@@ -29,7 +44,7 @@ export function AddLeadModal({ isOpen, onClose, onLeadAdded, addLead }: AddLeadM
       await addLead({
         ...formData,
         status: 'Base',
-        assigned_to: null
+        assigned_to: formData.assigned_to || null,
       });
       onLeadAdded?.();
       onClose();
@@ -40,7 +55,8 @@ export function AddLeadModal({ isOpen, onClose, onLeadAdded, addLead }: AddLeadM
         company: '',
         job_title: '',
         source: '',
-        notes: ''
+        notes: '',
+        assigned_to: '',
       });
     } catch (err) {
       console.error(err);
@@ -110,7 +126,7 @@ export function AddLeadModal({ isOpen, onClose, onLeadAdded, addLead }: AddLeadM
                 onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
               />
             </div>
-            <div className="col-span-2">
+            <div>
               <label className="text-sm font-medium block mb-1">Origem do Lead</label>
               <input
                 type="text"
@@ -119,6 +135,21 @@ export function AddLeadModal({ isOpen, onClose, onLeadAdded, addLead }: AddLeadM
                 value={formData.source}
                 onChange={(e) => setFormData({ ...formData, source: e.target.value })}
               />
+            </div>
+            <div>
+              <label className="text-sm font-medium block mb-1">Responsável</label>
+              <select
+                className="w-full bg-secondary border border-border rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-primary"
+                value={formData.assigned_to}
+                onChange={(e) => setFormData({ ...formData, assigned_to: e.target.value })}
+              >
+                <option value="">Sem responsável</option>
+                {workspaceMembers.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.full_name || `Usuário ${m.id.slice(0, 8)}`}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="col-span-2">
               <label className="text-sm font-medium block mb-1">Observações</label>

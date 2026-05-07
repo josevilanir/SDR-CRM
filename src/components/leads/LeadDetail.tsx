@@ -12,11 +12,7 @@ import { useWorkspace } from '../../contexts/WorkspaceContext';
 import { supabase } from '../../lib/supabase';
 import type { Lead, Campaign, Message, Profile } from '../../types';
 import { cn } from '../../utils/cn';
-
-const STAGES = [
-  'Base', 'Lead Mapeado', 'Tentando Contato', 'Conexão Iniciada',
-  'Desqualificado', 'Qualificado', 'Reunião Agendada'
-];
+import { STAGES } from '../../constants/stages';
 
 interface LeadDetailProps {
   lead: Lead | null;

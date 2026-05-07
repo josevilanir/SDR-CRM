@@ -17,7 +17,7 @@ export const STAGES = [
 ];
 
 export function KanbanBoard() {
-  const { leads, moveLead, loading } = useLeads();
+  const { leads, moveLead, loading, refresh: fetchLeads } = useLeads();
   const [activeLead, setActiveLead] = useState<Lead | null>(null);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
@@ -84,9 +84,10 @@ export function KanbanBoard() {
         </DragOverlay>
       </DndContext>
 
-      <LeadDetail 
-        lead={selectedLead} 
-        onClose={() => setSelectedLead(null)} 
+      <LeadDetail
+        lead={selectedLead}
+        onClose={() => setSelectedLead(null)}
+        onLeadUpdated={() => { setSelectedLead(null); fetchLeads(); }}
       />
     </>
   );

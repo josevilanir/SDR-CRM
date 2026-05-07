@@ -48,3 +48,18 @@ export interface Message {
   status: 'draft' | 'sent';
   created_at: string;
 }
+
+export interface FieldDefinition {
+  id: string;
+  workspace_id: string;
+  name: string;
+  type: 'text' | 'number' | 'boolean' | 'select';
+  created_at: string;
+}
+
+export interface LeadCustomField {
+  id: string;
+  lead_id: string;
+  field_definition_id: string;
+  value: string | null;
+}

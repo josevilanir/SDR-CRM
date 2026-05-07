@@ -23,9 +23,14 @@
 - [ ] Adicionar validação de campos obrigatórios por etapa
 
 ## Fase 4: Campanhas e IA
-- [ ] Criar CRUD de Campanhas (Contexto, Prompt, Gatilho)
-- [ ] Criar Edge Function para geração de mensagens via LLM
-- [ ] Implementar interface de geração manual de mensagens no Lead
+- [x] Criar CRUD de Campanhas (Contexto, Prompt, Gatilho) — src/pages/Campaigns.tsx
+- [x] Criar hook useCampaigns — src/hooks/useCampaigns.ts
+- [x] Criar hook useCustomFields para campos personalizados — src/hooks/useCustomFields.ts
+- [x] Implementar campos personalizados no LeadDetail (editar + adicionar)
+- [x] Criar Edge Function generate-message com Gemini 1.5 Flash — supabase/functions/generate-message/index.ts
+- [x] Implementar interface de geração: seletor de campanha, Gerar Sugestões, Copiar, Enviar (move para "Tentando Contato")
+- [ ] Deployar Edge Function: supabase functions deploy generate-message
+- [ ] Configurar GEMINI_API_KEY: supabase secrets set GEMINI_API_KEY=<sua-chave>
 
 ## Fase 5: Automação (Diferencial)
 - [ ] Configurar Database Webhooks para mudança de etapa

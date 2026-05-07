@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Users } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useWorkspace } from '../contexts/WorkspaceContext';
@@ -9,6 +9,12 @@ export function JoinWorkspace() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { refresh } = useWorkspace();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate('/login');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,6 +89,13 @@ export function JoinWorkspace() {
           <Link to="/create-workspace" className="text-primary hover:underline">
             Criar workspace
           </Link>
+        </p>
+
+        <p className="text-center text-sm text-muted-foreground mt-3">
+          Conta errada?{' '}
+          <button onClick={handleSignOut} className="text-destructive hover:underline">
+            Sair
+          </button>
         </p>
       </div>
     </div>

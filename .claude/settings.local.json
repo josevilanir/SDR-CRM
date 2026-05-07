@@ -18,7 +18,14 @@
       "Bash(git add *)",
       "mcp__plugin_supabase_supabase__list_edge_functions",
       "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\vilan\\\\SDR CRM\\\\src\" -Recurse -Force | Select-Object @{Name=\"Path\"; Expression={$_.FullName -replace [regex]::Escape\\(\"C:\\\\Users\\\\vilan\\\\SDR CRM\\\\\"\\), \"\"}} | Format-List -Property Path)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\vilan\\\\SDR CRM\\\\src\" -Recurse -Directory)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Sort-Object)",
+      "Bash(xargs grep -l \"invitation\\\\|invite\")",
+      "Bash(iconv *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\vilan\\\\SDR CRM\\\\src\" -Recurse -File)",
+      "Bash(Select-Object FullName)"
     ]
   }
 }

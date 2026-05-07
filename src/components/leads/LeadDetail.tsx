@@ -18,7 +18,7 @@ interface LeadDetailProps {
 }
 
 export function LeadDetail({ lead, onClose, onLeadUpdated }: LeadDetailProps) {
-  const { updateLead, deleteLead } = useLeads();
+  const { updateLead, deleteLead, moveLead } = useLeads();
   const { campaigns } = useCampaigns();
   const { fieldDefinitions, getValueForField, upsertFieldValue, addFieldDefinition, deleteFieldDefinition } = useCustomFields(lead?.id);
 

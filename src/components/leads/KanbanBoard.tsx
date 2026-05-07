@@ -38,6 +38,23 @@ export function KanbanBoard({ leads, loading, refresh, moveLead }: { leads: any[
 
     if (over && active.id !== over.id) {
       const newStatus = over.id as string;
+      const lead = leads.find(l => l.id === active.id);
+
+      // Requisito 5: Regras de Transição
+      if (newStatus === 'Lead Mapeado' || newStatus === 'Tentando Contato') {
+        if (!lead?.company || !lead?.job_title) {
+          alert(`Para mover para "${newStatus}", os campos Empresa e Cargo são obrigatórios.`);
+          return;
+        }
+      }
+
+      if (newStatus === 'Qualificado' || newStatus === 'Reunião Agendada') {
+        if (!lead?.email && !lead?.phone) {
+          alert(`Para mover para "${newStatus}", é necessário ter E-mail ou Telefone.`);
+          return;
+        }
+      }
+
       await moveLead(active.id as string, newStatus);
     }
   };

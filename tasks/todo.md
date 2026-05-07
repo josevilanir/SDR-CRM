@@ -15,9 +15,15 @@
 ## Fase 3: Gestão de Leads (Kanban)
 - [x] Criar tabelas de Leads e Field Definitions
 - [x] Implementar Kanban Board com dnd-kit
-- [x] Criar Modal de Adição de Lead
-- [x] Criar Drawer de Detalhes do Lead (LeadDetail)
-- [x] Implementar Hook `useLeads` para CRUD completo
+- [x] Implementar exclusão de Leads no `LeadDetail`.
+- [x] Corrigir vazamento de valores em campos personalizados entre leads.
+- [x] Implementar exclusão de definições de campos personalizados.
+- [x] Migrar Edge Functions para Gemini 2.5 Flash (Estável).
+- [x] Corrigir bug de "Refresh on Focus" no `WorkspaceContext`.
+- [x] Sincronizar criação de leads com o Kanban (Real-time UI).
+- [x] Criar Edge Function `generate-message` integrada ao Gemini
+- [x] Implementar UI de Geração de Mensagem no LeadDetail
+- [x] Configurar GEMINI_API_KEY no Supabase Secrets
 
 ## Fase 4: Integração com IA (Gemini 1.5 Flash)
 - [x] Criar tabela de Campanhas e Mensagens

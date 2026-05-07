@@ -1,4 +1,4 @@
-import { DndContext, DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, type DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useState } from 'react';
 import { KanbanColumn } from './KanbanColumn';
 import { LeadCard } from './LeadCard';

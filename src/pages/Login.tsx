@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { LogIn, UserPlus, Github } from 'lucide-react';
-import { cn } from '../utils/cn';
+import { LogIn, UserPlus } from 'lucide-react';
 
 export function Login() {
   const [isLogin, setIsLogin] = useState(true);

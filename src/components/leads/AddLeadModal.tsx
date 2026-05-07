@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
 import { useLeads } from '../../hooks/useLeads';
-import { cn } from '../../utils/cn';
 
 interface AddLeadModalProps {
   isOpen: boolean;

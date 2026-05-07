@@ -23,9 +23,9 @@ Este projeto consiste em um Mini CRM para SDRs (Sales Development Representative
 
 ---
 
-### [Componente 1] Infraestrutura e Banco de Dados (Supabase)
+### [COMPLETED] [Componente 1] Infraestrutura e Banco de Dados (Supabase)
 
-Definição do schema relacional com foco em isolamento por workspace e suporte a campos dinâmicos.
+Definição do schema relacional com foco em isolamento por workspace e suporte a campos dinâmicos. (Migration aplicada).
 
 #### [NEW] [schema.sql](file:///c:/Users/vilan/SDR%20CRM/supabase/migrations/20240507_init.sql)
 - Tabelas: `workspaces`, `profiles` (vínculo com auth.users), `leads`, `lead_custom_fields`, `field_definitions`, `campaigns`, `messages`.
@@ -33,17 +33,13 @@ Definição do schema relacional com foco em isolamento por workspace e suporte 
 
 ---
 
-### [Componente 2] Autenticação e Gestão de Workspace
+### [COMPLETED] [Componente 2] Autenticação e Gestão de Workspace
 
-Fluxo de login, cadastro e inicialização de workspace.
-
-#### [NEW] [AuthFlow.tsx](file:///c:/Users/vilan/SDR%20CRM/src/components/auth/AuthFlow.tsx)
-- Login/Cadastro com Supabase Auth.
-- Redirecionamento baseado em estado de workspace.
+Fluxo de login, cadastro e inicialização de workspace. (Implementado com WorkspaceProvider e RPC).
 
 ---
 
-### [Componente 3] Gestão de Leads e Kanban
+### [IN PROGRESS] [Componente 3] Gestão de Leads e Kanban
 
 Interface principal para visualização e movimentação de leads.
 

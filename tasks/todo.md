@@ -7,14 +7,19 @@
 - [x] Configurar variáveis de ambiente (Supabase URL/Key)
 
 ## Fase 2: Autenticação e Multi-tenancy
-- [ ] Implementar fluxo de Login/Cadastro
-- [ ] Implementar lógica de Workspace (Criação/Seleção)
-- [ ] Configurar políticas RLS para isolamento de dados
+- [x] Implementar fluxo de Login/Cadastro (UI Pronta, Lógica em andamento)
+- [x] Implementar lógica de Workspace (Criação/Seleção)
+  - WorkspaceProvider + useWorkspace hook (src/contexts/WorkspaceContext.tsx)
+  - Tela de onboarding CreateWorkspace (src/pages/CreateWorkspace.tsx)
+  - Roteamento workspace-aware no App.tsx
+  - Sidebar com nome do Workspace e perfil (Layout.tsx)
+  - RPC SECURITY DEFINER para criação atômica (supabase/migrations/20240508_workspace_rpc.sql)
+- [ ] Aplicar migration 20240508_workspace_rpc.sql no Supabase (manual)
 
 ## Fase 3: Gestão de Leads
-- [ ] Criar CRUD de Leads (Campos padrão)
-- [ ] Implementar Kanban Board (Drag and Drop)
-- [ ] Implementar sistema de campos personalizados dinâmicos
+- [x] Criar CRUD de Leads (Campos padrão)
+- [x] Implementar Kanban Board (Drag and Drop)
+- [/] Implementar sistema de campos personalizados dinâmicos
 - [ ] Adicionar validação de campos obrigatórios por etapa
 
 ## Fase 4: Campanhas e IA

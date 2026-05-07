@@ -1,22 +1,32 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Session } from '@supabase/supabase-js';
+import { supabase } from './lib/supabase';
+import { WorkspaceProvider, useWorkspace } from './contexts/WorkspaceContext';
 import { Layout } from './components/Layout';
 import { Dashboard } from './pages/Dashboard';
 import { Kanban } from './pages/Kanban';
 import { Campaigns } from './pages/Campaigns';
 import { Login } from './pages/Login';
-import { useEffect, useState } from 'react';
-import { supabase } from './lib/supabase';
-import { Session } from '@supabase/supabase-js';
+import { CreateWorkspace } from './pages/CreateWorkspace';
 
-function App() {
+function Spinner() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary" />
+    </div>
+  );
+}
+
+function AppRoutes() {
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [sessionLoading, setSessionLoading] = useState(true);
+  const { workspace, loading: workspaceLoading } = useWorkspace();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      setLoading(loading);
-      setLoading(false);
+      setSessionLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -26,25 +36,47 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-      </div>
-    );
+  if (sessionLoading || (session && workspaceLoading)) {
+    return <Spinner />;
   }
 
   return (
+    <Routes>
+      <Route
+        path="/login"
+        element={!session ? <Login /> : <Navigate to="/" replace />}
+      />
+
+      <Route
+        path="/create-workspace"
+        element={
+          !session ? <Navigate to="/login" replace /> :
+          workspace ? <Navigate to="/" replace /> :
+          <CreateWorkspace />
+        }
+      />
+
+      <Route
+        element={
+          !session ? <Navigate to="/login" replace /> :
+          !workspace ? <Navigate to="/create-workspace" replace /> :
+          <Layout />
+        }
+      >
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/leads" element={<Kanban />} />
+        <Route path="/campaigns" element={<Campaigns />} />
+      </Route>
+    </Routes>
+  );
+}
+
+function App() {
+  return (
     <Router>
-      <Routes>
-        <Route path="/login" element={!session ? <Login /> : <Navigate to="/" />} />
-        
-        <Route element={session ? <Layout /> : <Navigate to="/login" />}>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/leads" element={<Kanban />} />
-          <Route path="/campaigns" element={<Campaigns />} />
-        </Route>
-      </Routes>
+      <WorkspaceProvider>
+        <AppRoutes />
+      </WorkspaceProvider>
     </Router>
   );
 }

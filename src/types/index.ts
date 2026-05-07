@@ -10,6 +10,7 @@ export interface Profile {
   id: string;
   workspace_id: string;
   full_name: string | null;
+  email?: string | null;
   role: 'admin' | 'member';
   created_at: string;
 }

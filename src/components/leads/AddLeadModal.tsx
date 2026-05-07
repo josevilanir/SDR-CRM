@@ -146,7 +146,7 @@ export function AddLeadModal({ isOpen, onClose, onLeadAdded, addLead }: AddLeadM
                 <option value="">Sem responsável</option>
                 {workspaceMembers.map((m) => (
                   <option key={m.id} value={m.id}>
-                    {m.full_name || `Usuário ${m.id.slice(0, 8)}`}
+                    {m.full_name || m.email || `Usuário ${m.id.slice(0, 8)}`}
                   </option>
                 ))}
               </select>

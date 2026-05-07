@@ -67,3 +67,12 @@ export interface LeadCustomField {
   field_definition_id: string;
   value: string | null;
 }
+
+export interface WorkspaceInvite {
+  id: string;
+  workspace_id: string;
+  code: string;
+  created_by: string | null;
+  created_at: string;
+  expires_at: string;
+}

@@ -9,6 +9,8 @@ import { Kanban } from './pages/Kanban';
 import { Campaigns } from './pages/Campaigns';
 import { Login } from './pages/Login';
 import { CreateWorkspace } from './pages/CreateWorkspace';
+import { JoinWorkspace } from './pages/JoinWorkspace';
+import { Team } from './pages/Team';
 
 function Spinner() {
   return (
@@ -57,6 +59,15 @@ function AppRoutes() {
       />
 
       <Route
+        path="/join"
+        element={
+          !session ? <Navigate to="/login" replace /> :
+          workspace ? <Navigate to="/" replace /> :
+          <JoinWorkspace />
+        }
+      />
+
+      <Route
         element={
           !session ? <Navigate to="/login" replace /> :
           !workspace ? <Navigate to="/create-workspace" replace /> :
@@ -66,6 +77,7 @@ function AppRoutes() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/leads" element={<Kanban />} />
         <Route path="/campaigns" element={<Campaigns />} />
+        <Route path="/team" element={<Team />} />
       </Route>
     </Routes>
   );

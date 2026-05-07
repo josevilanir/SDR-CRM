@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Building2 } from 'lucide-react';
+import { Users } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useWorkspace } from '../contexts/WorkspaceContext';
 
-export function CreateWorkspace() {
-  const [name, setName] = useState('');
+export function JoinWorkspace() {
+  const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { refresh } = useWorkspace();
@@ -16,8 +16,8 @@ export function CreateWorkspace() {
     setError(null);
 
     try {
-      const { error } = await supabase.rpc('create_workspace_and_profile', {
-        workspace_name: name.trim(),
+      const { error } = await supabase.rpc('join_workspace', {
+        p_invite_code: code.trim(),
       });
       if (error) throw error;
       await refresh();
@@ -36,11 +36,11 @@ export function CreateWorkspace() {
       <div className="glass-card w-full max-w-md p-8 relative z-10">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-2xl mb-4">
-            <Building2 size={32} className="text-primary" />
+            <Users size={32} className="text-primary" />
           </div>
-          <h1 className="text-2xl font-bold mb-2">Criar seu Workspace</h1>
+          <h1 className="text-2xl font-bold mb-2">Entrar em um Workspace</h1>
           <p className="text-muted-foreground text-sm">
-            Dê um nome à sua empresa para começar a usar o CRM
+            Digite o código de convite fornecido pelo administrador
           </p>
         </div>
 
@@ -52,34 +52,36 @@ export function CreateWorkspace() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-sm font-medium block mb-1">Nome da Empresa</label>
+            <label className="text-sm font-medium block mb-1">Código de Convite</label>
             <input
               type="text"
               required
-              className="w-full bg-secondary border border-border rounded-lg p-2.5 focus:ring-2 focus:ring-primary outline-none transition-all"
-              placeholder="Ex: Acme Corp"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              className="w-full bg-secondary border border-border rounded-lg p-2.5 focus:ring-2 focus:ring-primary outline-none transition-all font-mono tracking-widest text-center text-lg uppercase"
+              placeholder="A1B2C3D4"
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              maxLength={8}
+              autoComplete="off"
             />
           </div>
 
           <button
             type="submit"
-            disabled={loading || !name.trim()}
+            disabled={loading || code.trim().length < 6}
             className="btn-primary w-full py-3 mt-2"
           >
             {loading ? (
-              <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-primary-foreground" />
+              <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-primary-foreground mx-auto" />
             ) : (
-              'Criar Workspace'
+              'Entrar no Workspace'
             )}
           </button>
         </form>
 
         <p className="text-center text-sm text-muted-foreground mt-6">
-          Tem um código de convite?{' '}
-          <Link to="/join" className="text-primary hover:underline">
-            Entrar em workspace existente
+          Quer criar seu próprio workspace?{' '}
+          <Link to="/create-workspace" className="text-primary hover:underline">
+            Criar workspace
           </Link>
         </p>
       </div>

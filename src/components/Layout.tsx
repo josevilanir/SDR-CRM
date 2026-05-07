@@ -6,7 +6,8 @@ import {
   LogOut,
   Menu,
   X,
-  Building2
+  Building2,
+  UsersRound,
 } from 'lucide-react';
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
@@ -28,6 +29,7 @@ export function Layout() {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
     { icon: Users, label: 'Leads (Kanban)', path: '/leads' },
     { icon: Megaphone, label: 'Campanhas', path: '/campaigns' },
+    { icon: UsersRound, label: 'Equipe', path: '/team' },
   ];
 
   return (

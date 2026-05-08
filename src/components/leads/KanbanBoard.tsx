@@ -29,7 +29,7 @@ export function KanbanBoard({
   moveLead: (id: string, status: string) => Promise<void>,
   fieldDefinitions?: FieldDefinition[],
   stageRules?: Record<string, string[]>,
-  displayStages?: string[]
+  displayStages?: readonly string[] | string[]
 }) {
   const [activeLead, setActiveLead] = useState<Lead | null>(null);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);

@@ -1,4 +1,4 @@
-import { KanbanBoard } from '../components/leads/KanbanBoard';
+import { KanbanBoard, STAGES } from '../components/leads/KanbanBoard';
 import { StageRulesModal } from '../components/leads/StageRulesModal';
 import { Plus, Settings2, Search, Filter, SlidersHorizontal } from 'lucide-react';
 import { useState } from 'react';

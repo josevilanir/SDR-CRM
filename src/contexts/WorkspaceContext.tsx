@@ -7,6 +7,7 @@ interface WorkspaceContextValue {
   workspace: Workspace | null;
   loading: boolean;
   refresh: () => Promise<void>;
+  updateProfile: (updates: Partial<Profile>) => Promise<void>;
 }
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
@@ -61,6 +62,17 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const updateProfile = async (updates: Partial<Profile>) => {
+    if (!profile) return;
+    const { error } = await supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', profile.id);
+
+    if (error) throw error;
+    setProfile({ ...profile, ...updates });
+  };
+
   useEffect(() => {
     fetchWorkspaceData();
 
@@ -80,7 +92,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   }, [fetchWorkspaceData]);
 
   return (
-    <WorkspaceContext.Provider value={{ profile, workspace, loading, refresh: fetchWorkspaceData }}>
+    <WorkspaceContext.Provider value={{ profile, workspace, loading, refresh: fetchWorkspaceData, updateProfile }}>
       {children}
     </WorkspaceContext.Provider>
   );

@@ -45,5 +45,6 @@
 - [x] Finalizar Documentação (README.md)
 
 ## Fase 7: Entrega
+- [/] Realizar Deploy na Vercel (Configurações preparadas)
 - [ ] Gravar vídeo de demonstração (10 min)
 - [x] Subir código para o repositório final

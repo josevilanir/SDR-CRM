@@ -4,13 +4,27 @@ import { useWorkspace } from '../contexts/WorkspaceContext';
 import { useMembers } from '../hooks/useMembers';
 
 export function Team() {
-  const { profile } = useWorkspace();
-  const { members, invites, loading, generateInvite, revokeInvite } = useMembers();
+  const { profile, updateProfile } = useWorkspace();
+  const { members, invites, loading, fetchMembers, generateInvite, revokeInvite } = useMembers();
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
+  const [isEditingOwnName, setIsEditingOwnName] = useState(false);
+  const [tempName, setTempName] = useState('');
+
   const isAdmin = profile?.role === 'admin';
+
+  const handleSaveName = async () => {
+    if (!tempName.trim()) return;
+    try {
+      await updateProfile({ full_name: tempName.trim() });
+      await fetchMembers();
+      setIsEditingOwnName(false);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
 
   const handleGenerateInvite = async () => {
     setGenerating(true);
@@ -78,12 +92,57 @@ export function Team() {
                     </span>
                   </div>
                   <div className="min-w-0">
-                    <p className="font-medium truncate">
-                      {member.full_name ?? 'Sem nome'}
-                      {member.id === profile?.id && (
-                        <span className="ml-2 text-xs text-muted-foreground">(você)</span>
-                      )}
-                    </p>
+                    {member.id === profile?.id ? (
+                      <div className="flex items-center gap-2 group">
+                        {isEditingOwnName ? (
+                          <div className="flex items-center gap-2">
+                            <input
+                              autoFocus
+                              className="bg-background border border-primary/50 rounded px-2 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary w-40"
+                              value={tempName}
+                              onChange={(e) => setTempName(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveName();
+                                if (e.key === 'Escape') setIsEditingOwnName(false);
+                              }}
+                            />
+                            <button
+                              onClick={handleSaveName}
+                              className="p-1 hover:bg-primary/20 rounded text-primary transition-colors"
+                            >
+                              <Check size={14} />
+                            </button>
+                            <button
+                              onClick={() => setIsEditingOwnName(false)}
+                              className="p-1 hover:bg-destructive/10 rounded text-muted-foreground transition-colors"
+                            >
+                              <Plus size={14} className="rotate-45" />
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <p className="font-medium truncate flex items-center gap-2">
+                              {member.full_name ?? 'Sem nome'}
+                              <span className="text-xs text-muted-foreground font-normal">(você)</span>
+                            </p>
+                            <button
+                              onClick={() => {
+                                setTempName(member.full_name ?? '');
+                                setIsEditingOwnName(true);
+                              }}
+                              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-secondary rounded text-muted-foreground hover:text-primary transition-all"
+                              title="Editar nome"
+                            >
+                              <Plus size={12} />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="font-medium truncate">
+                        {member.full_name ?? 'Sem nome'}
+                      </p>
+                    )}
                     <p className="text-sm text-muted-foreground truncate">
                       {member.email ?? '—'}
                     </p>

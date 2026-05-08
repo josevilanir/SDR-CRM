@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useWorkspace } from '../contexts/WorkspaceContext';
 
@@ -13,7 +13,7 @@ const DEFAULT_RULES: Record<string, string[]> = {
 export function useStageRules() {
   const { workspace, refresh } = useWorkspace();
   const [rules, setRules] = useState<Record<string, string[]>>(DEFAULT_RULES);
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
 
   // Update local rules whenever workspace changes
   useEffect(() => {

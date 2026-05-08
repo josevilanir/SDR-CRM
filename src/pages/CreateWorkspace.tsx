@@ -22,8 +22,12 @@ export function CreateWorkspace() {
     setError(null);
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const userFullName = user?.user_metadata?.full_name;
+
       const { error } = await supabase.rpc('create_workspace_and_profile', {
         workspace_name: name.trim(),
+        user_full_name: userFullName,
       });
       if (error) throw error;
       await refresh();

@@ -6,6 +6,7 @@ export function Login() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,9 +20,18 @@ export function Login() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       } else {
-        const { error } = await supabase.auth.signUp({ email, password });
+        const { error } = await supabase.auth.signUp({ 
+          email, 
+          password,
+          options: {
+            data: {
+              full_name: fullName.trim()
+            }
+          }
+        });
         if (error) throw error;
-        alert('Confirme seu e-mail para continuar!');
+        alert('Cadastro realizado! Agora você pode entrar.');
+        setIsLogin(true);
       }
     } catch (err: any) {
       setError(err.message);
@@ -51,6 +61,19 @@ export function Login() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {!isLogin && (
+            <div>
+              <label className="text-sm font-medium block mb-1">Nome Completo</label>
+              <input
+                type="text"
+                required
+                className="w-full bg-secondary border border-border rounded-lg p-2.5 focus:ring-2 focus:ring-primary outline-none transition-all"
+                placeholder="Seu nome"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+              />
+            </div>
+          )}
           <div>
             <label className="text-sm font-medium block mb-1">E-mail</label>
             <input

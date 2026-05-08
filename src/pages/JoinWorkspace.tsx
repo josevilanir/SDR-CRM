@@ -22,8 +22,12 @@ export function JoinWorkspace() {
     setError(null);
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const userFullName = user?.user_metadata?.full_name;
+
       const { error } = await supabase.rpc('join_workspace', {
         p_invite_code: code.trim(),
+        user_full_name: userFullName,
       });
       if (error) throw error;
       await refresh();

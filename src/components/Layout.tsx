@@ -8,6 +8,8 @@ import {
   X,
   Building2,
   UsersRound,
+  ChevronDown,
+  Plus,
 } from 'lucide-react';
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
@@ -18,7 +20,8 @@ export function Layout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
-  const { workspace, profile } = useWorkspace();
+  const { workspace, workspaces, profile, switchWorkspace } = useWorkspace();
+  const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -36,7 +39,12 @@ export function Layout() {
     <div className="min-h-screen bg-background text-foreground flex flex-col lg:flex-row">
       {/* Mobile Header */}
       <header className="lg:hidden h-16 border-b border-border bg-background/80 backdrop-blur-md flex items-center justify-between px-4 sticky top-0 z-[60]">
-        <span className="font-bold text-xl gradient-text">SDR CRM</span>
+        <div className="flex items-center gap-2">
+          <Building2 className="text-primary" size={20} />
+          <span className="font-bold text-lg gradient-text truncate max-w-[150px]">
+            {workspace?.name ?? 'SDR CRM'}
+          </span>
+        </div>
         <button
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
           className="p-2 hover:bg-secondary rounded-lg transition-colors"
@@ -61,15 +69,70 @@ export function Layout() {
           isSidebarOpen ? "translate-x-0 w-64" : "-translate-x-full lg:translate-x-0 lg:w-20"
         )}
       >
-        {/* Header - Desktop only toggle button */}
-        <div className="p-4 flex items-center justify-between border-b border-border/50">
-          {(isSidebarOpen || !isSidebarOpen) && (
-            <span className={cn("font-bold text-xl gradient-text", !isSidebarOpen && "lg:hidden")}>
-              SDR CRM
-            </span>
-          )}
+        {/* Workspace Switcher */}
+        <div className="p-4 border-b border-border/50 relative">
           <button
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            onClick={() => isSidebarOpen && setShowWorkspaceMenu(!showWorkspaceMenu)}
+            className={cn(
+              "w-full flex items-center gap-3 p-2 rounded-xl transition-all",
+              isSidebarOpen ? "hover:bg-secondary" : "justify-center"
+            )}
+          >
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Building2 className="text-primary" size={20} />
+            </div>
+            {isSidebarOpen && (
+              <>
+                <div className="flex-1 text-left min-w-0">
+                  <p className="text-sm font-bold truncate">{workspace?.name ?? 'SDR CRM'}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Workspace Ativo</p>
+                </div>
+                <ChevronDown size={14} className={cn("text-muted-foreground transition-transform", showWorkspaceMenu && "rotate-180")} />
+              </>
+            )}
+          </button>
+
+          {/* Workspace Dropdown */}
+          {showWorkspaceMenu && isSidebarOpen && (
+            <div className="absolute left-4 right-4 top-full mt-2 glass-card border border-border/50 rounded-xl shadow-2xl z-[70] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="p-2 max-h-[300px] overflow-y-auto">
+                <p className="px-3 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Meus Workspaces</p>
+                {workspaces.map((w) => (
+                  <button
+                    key={w.id}
+                    onClick={async () => {
+                      await switchWorkspace(w.id);
+                      setShowWorkspaceMenu(false);
+                    }}
+                    className={cn(
+                      "w-full flex items-center gap-3 p-2 rounded-lg text-sm transition-colors",
+                      w.id === workspace?.id ? "bg-primary/10 text-primary font-bold" : "hover:bg-secondary/50"
+                    )}
+                  >
+                    <div className={cn("w-2 h-2 rounded-full", w.id === workspace?.id ? "bg-primary" : "bg-muted-foreground/30")} />
+                    <span className="truncate">{w.name}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="p-2 border-t border-border/50 bg-secondary/30">
+                <Link
+                  to="/create-workspace"
+                  onClick={() => setShowWorkspaceMenu(false)}
+                  className="flex items-center gap-2 p-2 rounded-lg text-xs font-medium hover:bg-secondary transition-colors"
+                >
+                  <Plus size={14} /> Novo Workspace
+                </Link>
+                <Link
+                  to="/join"
+                  onClick={() => setShowWorkspaceMenu(false)}
+                  className="flex items-center gap-2 p-2 rounded-lg text-xs font-medium hover:bg-secondary transition-colors"
+                >
+                  <UsersRound size={14} /> Entrar com Código
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
             className="p-2 hover:bg-secondary rounded-lg transition-colors ml-auto hidden lg:flex"
           >
             {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}

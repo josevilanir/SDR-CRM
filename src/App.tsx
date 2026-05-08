@@ -53,7 +53,6 @@ function AppRoutes() {
         path="/create-workspace"
         element={
           !session ? <Navigate to="/login" replace /> :
-          workspace ? <Navigate to="/" replace /> :
           <CreateWorkspace />
         }
       />
@@ -62,7 +61,6 @@ function AppRoutes() {
         path="/join"
         element={
           !session ? <Navigate to="/login" replace /> :
-          workspace ? <Navigate to="/" replace /> :
           <JoinWorkspace />
         }
       />

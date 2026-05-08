@@ -5,9 +5,11 @@ import type { Profile, Workspace } from '../types';
 interface WorkspaceContextValue {
   profile: Profile | null;
   workspace: Workspace | null;
+  workspaces: Workspace[]; // New: List of all user's workspaces
   loading: boolean;
   refresh: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<void>;
+  switchWorkspace: (workspaceId: string) => Promise<void>; // New: Function to switch active workspace
 }
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
@@ -15,6 +17,7 @@ const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [loading, setLoading] = useState(true);
   const isLoadedRef = useRef(false);
   const isFetchingRef = useRef(false);
@@ -29,6 +32,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       if (!user) {
         setProfile(null);
         setWorkspace(null);
+        setWorkspaces([]);
         isLoadedRef.current = false;
         return;
       }
@@ -42,25 +46,59 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       if (!profileData) {
         setProfile(null);
         setWorkspace(null);
+        setWorkspaces([]);
         isLoadedRef.current = false;
         return;
       }
 
       setProfile(profileData);
 
-      const { data: workspaceData } = await supabase
-        .from('workspaces')
-        .select('*')
-        .eq('id', profileData.workspace_id)
-        .maybeSingle();
+      // Fetch ALL workspaces this user belongs to
+      const { data: membershipData } = await supabase
+        .from('workspace_members')
+        .select('workspace_id, workspaces(*)')
+        .eq('profile_id', user.id);
 
-      setWorkspace(workspaceData ?? null);
-      isLoadedRef.current = !!workspaceData;
+      const userWorkspaces = (membershipData?.map(m => m.workspaces) ?? []) as Workspace[];
+      setWorkspaces(userWorkspaces);
+
+      // Current active workspace
+      const activeWorkspace = userWorkspaces.find(w => w.id === profileData.workspace_id) || null;
+      setWorkspace(activeWorkspace);
+      isLoadedRef.current = !!activeWorkspace;
     } finally {
       setLoading(false);
       isFetchingRef.current = false;
     }
   }, []);
+
+  const switchWorkspace = async (workspaceId: string) => {
+    if (!profile) return;
+    
+    // Find the membership for the role
+    const { data: member } = await supabase
+      .from('workspace_members')
+      .select('role')
+      .eq('profile_id', profile.id)
+      .eq('workspace_id', workspaceId)
+      .single();
+
+    if (!member) return;
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ 
+        workspace_id: workspaceId,
+        role: member.role 
+      })
+      .eq('id', profile.id);
+
+    if (error) throw error;
+    
+    // Refresh all data
+    isLoadedRef.current = false;
+    await fetchWorkspaceData();
+  };
 
   const updateProfile = async (updates: Partial<Profile>) => {
     if (!profile) return;
@@ -92,7 +130,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   }, [fetchWorkspaceData]);
 
   return (
-    <WorkspaceContext.Provider value={{ profile, workspace, loading, refresh: fetchWorkspaceData, updateProfile }}>
+    <WorkspaceContext.Provider value={{ profile, workspace, workspaces, loading, refresh: fetchWorkspaceData, updateProfile, switchWorkspace }}>
       {children}
     </WorkspaceContext.Provider>
   );

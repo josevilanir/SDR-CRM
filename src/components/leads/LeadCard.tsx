@@ -17,6 +17,7 @@ export function LeadCard({ lead, onClick }: LeadCardProps) {
 
   const style = {
     transform: CSS.Translate.toString(transform),
+    touchAction: 'none' as const,
   };
 
   return (

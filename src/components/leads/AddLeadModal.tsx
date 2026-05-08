@@ -1,8 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { X } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
-import { useWorkspace } from '../../contexts/WorkspaceContext';
-import type { Profile } from '../../types';
+import { useMembers } from '../../hooks/useMembers';
 
 interface AddLeadModalProps {
   isOpen: boolean;
@@ -12,9 +10,8 @@ interface AddLeadModalProps {
 }
 
 export function AddLeadModal({ isOpen, onClose, onLeadAdded, addLead }: AddLeadModalProps) {
-  const { workspace } = useWorkspace();
+  const { members: workspaceMembers } = useMembers();
   const [loading, setLoading] = useState(false);
-  const [workspaceMembers, setWorkspaceMembers] = useState<Profile[]>([]);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -25,15 +22,6 @@ export function AddLeadModal({ isOpen, onClose, onLeadAdded, addLead }: AddLeadM
     notes: '',
     assigned_to: '',
   });
-
-  useEffect(() => {
-    if (!workspace || !isOpen) return;
-    supabase
-      .from('profiles')
-      .select('*')
-      .eq('workspace_id', workspace.id)
-      .then(({ data }) => setWorkspaceMembers(data ?? []));
-  }, [workspace, isOpen]);
 
   if (!isOpen) return null;
 

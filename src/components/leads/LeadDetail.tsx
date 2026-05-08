@@ -8,9 +8,9 @@ import {
 import { useLeads } from '../../hooks/useLeads';
 import { useCampaigns } from '../../hooks/useCampaigns';
 import { useCustomFields } from '../../hooks/useCustomFields';
-import { useWorkspace } from '../../contexts/WorkspaceContext';
+import { useMembers } from '../../hooks/useMembers';
 import { supabase } from '../../lib/supabase';
-import type { Lead, Campaign, Message, Profile } from '../../types';
+import type { Lead, Campaign, Message } from '../../types';
 import { cn } from '../../utils/cn';
 import { STAGES } from '../../constants/stages';
 
@@ -23,12 +23,11 @@ interface LeadDetailProps {
 export function LeadDetail({ lead, onClose, onLeadUpdated }: LeadDetailProps) {
   const { updateLead, deleteLead } = useLeads();
   const { campaigns } = useCampaigns();
+  const { members: workspaceMembers } = useMembers();
   const { fieldDefinitions, getValueForField, upsertFieldValue, addFieldDefinition, deleteFieldDefinition, updateFieldRequiredStages } = useCustomFields(lead?.id);
-  const { workspace } = useWorkspace();
 
   const [formData, setFormData] = useState<Partial<Lead>>({});
   const [saving, setSaving] = useState(false);
-  const [workspaceMembers, setWorkspaceMembers] = useState<Profile[]>([]);
   const [expandedFieldConfig, setExpandedFieldConfig] = useState<string | null>(null);
 
   // Saved messages from DB
@@ -82,14 +81,6 @@ export function LeadDetail({ lead, onClose, onLeadUpdated }: LeadDetailProps) {
     }
   }, [lead, loadMessages]);
 
-  useEffect(() => {
-    if (!workspace) return;
-    supabase
-      .from('profiles')
-      .select('*')
-      .eq('workspace_id', workspace.id)
-      .then(({ data }) => setWorkspaceMembers(data ?? []));
-  }, [workspace]);
 
   if (!lead) return null;
 

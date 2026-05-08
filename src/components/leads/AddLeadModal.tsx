@@ -70,7 +70,7 @@ export function AddLeadModal({ isOpen, onClose, onLeadAdded, addLead }: AddLeadM
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       
-      <div className="glass-card w-full max-w-xl p-8 relative z-10 animate-in fade-in zoom-in duration-200">
+      <div className="glass-card w-full max-w-xl p-6 md:p-8 relative z-10 animate-in fade-in zoom-in duration-200 overflow-y-auto max-h-[95vh]">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold">Novo Lead</h2>
           <button onClick={onClose} className="p-2 hover:bg-secondary rounded-lg transition-colors">
@@ -79,7 +79,7 @@ export function AddLeadModal({ isOpen, onClose, onLeadAdded, addLead }: AddLeadM
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="col-span-2">
               <label className="text-sm font-medium block mb-1">Nome Completo *</label>
               <input

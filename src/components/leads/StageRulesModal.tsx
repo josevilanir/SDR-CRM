@@ -72,47 +72,49 @@ export function StageRulesModal({ rules, onSave, onClose }: StageRulesModalProps
         </div>
 
         {/* Table */}
-        <div className="flex-1 overflow-auto p-6">
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr>
-                <th className="text-left py-2 pr-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider w-44">
-                  Etapa
-                </th>
-                {STANDARD_FIELDS.map(f => (
-                  <th key={f.key} className="text-center py-2 px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    {f.label}
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm border-collapse min-w-[600px]">
+              <thead>
+                <tr>
+                  <th className="text-left py-2 pr-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider w-44">
+                    Etapa
                   </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {STAGES.map((stage, idx) => (
-                <tr
-                  key={stage}
-                  className={cn(
-                    "border-t border-border/40",
-                    idx % 2 === 0 ? "bg-secondary/10" : "bg-transparent"
-                  )}
-                >
-                  <td className="py-3 pr-4 font-medium text-sm">{stage}</td>
-                  {STANDARD_FIELDS.map(f => {
-                    const checked = localRules[stage]?.includes(f.key) ?? false;
-                    return (
-                      <td key={f.key} className="text-center py-3 px-2">
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => toggle(stage, f.key)}
-                          className="w-4 h-4 accent-primary cursor-pointer"
-                        />
-                      </td>
-                    );
-                  })}
+                  {STANDARD_FIELDS.map(f => (
+                    <th key={f.key} className="text-center py-2 px-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      {f.label}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {STAGES.map((stage, idx) => (
+                  <tr
+                    key={stage}
+                    className={cn(
+                      "border-t border-border/40",
+                      idx % 2 === 0 ? "bg-secondary/10" : "bg-transparent"
+                    )}
+                  >
+                    <td className="py-3 pr-4 font-medium text-sm">{stage}</td>
+                    {STANDARD_FIELDS.map(f => {
+                      const checked = localRules[stage]?.includes(f.key) ?? false;
+                      return (
+                        <td key={f.key} className="text-center py-3 px-2">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => toggle(stage, f.key)}
+                            className="w-4 h-4 accent-primary cursor-pointer"
+                          />
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           <p className="text-xs text-muted-foreground mt-4">
             Os campos marcados devem estar preenchidos para que o lead possa ser movido para a etapa correspondente.

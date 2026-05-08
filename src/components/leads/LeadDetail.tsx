@@ -239,7 +239,7 @@ export function LeadDetail({ lead, onClose, onLeadUpdated }: LeadDetailProps) {
 
   return (
     <div className={cn(
-      "fixed inset-y-0 right-0 w-full max-w-xl bg-background border-l border-border z-[100] shadow-2xl transition-transform duration-300 transform",
+      "fixed inset-y-0 right-0 w-full lg:max-w-xl bg-background border-l border-border z-[100] shadow-2xl transition-transform duration-300 transform",
       lead ? "translate-x-0" : "translate-x-full"
     )}>
       <div className="flex flex-col h-full">

@@ -16,9 +16,9 @@ export function Kanban() {
 
   return (
     <div className="space-y-6 flex flex-col h-full">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold">Funil de Vendas</h1>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setIsRulesModalOpen(true)}
             className="flex items-center gap-2 px-4 py-2 border border-border rounded-xl hover:bg-secondary transition-colors text-sm font-medium"

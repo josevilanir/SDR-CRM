@@ -11,31 +11,18 @@ const DEFAULT_RULES: Record<string, string[]> = {
 };
 
 export function useStageRules() {
-  const { workspace } = useWorkspace();
+  const { workspace, refresh } = useWorkspace();
   const [rules, setRules] = useState<Record<string, string[]>>(DEFAULT_RULES);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  const fetchRules = useCallback(async () => {
-    if (!workspace) return;
-    setLoading(true);
-    try {
-      const { data } = await supabase
-        .from('workspaces')
-        .select('stage_transition_rules')
-        .eq('id', workspace.id)
-        .single();
-
-      const saved = data?.stage_transition_rules;
-      // Use saved rules if they exist, otherwise fall back to defaults
-      setRules(saved && Object.keys(saved).length > 0 ? saved : DEFAULT_RULES);
-    } finally {
-      setLoading(false);
+  // Update local rules whenever workspace changes
+  useEffect(() => {
+    if (workspace?.stage_transition_rules && Object.keys(workspace.stage_transition_rules).length > 0) {
+      setRules(workspace.stage_transition_rules);
+    } else {
+      setRules(DEFAULT_RULES);
     }
   }, [workspace]);
-
-  useEffect(() => {
-    fetchRules();
-  }, [fetchRules]);
 
   const saveRules = async (newRules: Record<string, string[]>) => {
     if (!workspace) return;
@@ -50,6 +37,7 @@ export function useStageRules() {
     }
     
     setRules(newRules);
+    await refresh(); // Force workspace context to update
   };
 
   return { rules, loading, saveRules };

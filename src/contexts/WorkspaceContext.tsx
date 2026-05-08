@@ -59,7 +59,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         .select('workspace_id, workspaces(*)')
         .eq('profile_id', user.id);
 
-      const userWorkspaces = (membershipData?.map(m => m.workspaces) ?? []) as Workspace[];
+      const userWorkspaces = (membershipData?.map(m => m.workspaces) || []) as unknown as Workspace[];
       setWorkspaces(userWorkspaces);
 
       // Current active workspace

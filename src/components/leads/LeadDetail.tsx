@@ -3,7 +3,7 @@ import {
   X, Mail, Phone, Building2, User, Save, Megaphone,
   Sparkles, Copy, Send, ChevronDown, Plus, Loader2,
   Check, AlertCircle, SlidersHorizontal, RefreshCw, Bot, Trash2, MinusCircle,
-  Settings, MapPin
+  Settings, MapPin, History
 } from 'lucide-react';
 import { useLeads } from '../../hooks/useLeads';
 import { useCampaigns } from '../../hooks/useCampaigns';
@@ -34,6 +34,7 @@ export function LeadDetail({ lead, onClose, onLeadUpdated }: LeadDetailProps) {
   // Saved messages from DB
   const [savedMessages, setSavedMessages] = useState<Message[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const [logs, setLogs] = useState<any[]>([]);
 
   // Manual generator state
   const [showGenerator, setShowGenerator] = useState(false);
@@ -50,13 +51,21 @@ export function LeadDetail({ lead, onClose, onLeadUpdated }: LeadDetailProps) {
   const loadMessages = useCallback(async (leadId: string) => {
     setLoadingMessages(true);
     try {
-      const { data } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('lead_id', leadId)
-        .eq('status', 'draft')
-        .order('created_at', { ascending: false });
-      setSavedMessages(data ?? []);
+      const [{ data: msgData }, { data: logData }] = await Promise.all([
+        supabase
+          .from('messages')
+          .select('*')
+          .eq('lead_id', leadId)
+          .eq('status', 'draft')
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('activity_logs')
+          .select('*')
+          .eq('lead_id', leadId)
+          .order('created_at', { ascending: false })
+      ]);
+      setSavedMessages(msgData ?? []);
+      setLogs(logData ?? []);
     } finally {
       setLoadingMessages(false);
     }
@@ -584,6 +593,42 @@ export function LeadDetail({ lead, onClose, onLeadUpdated }: LeadDetailProps) {
                 <p className="text-xs text-destructive">{aiError}</p>
               </div>
             )}
+          </section>
+
+          {/* Activity Log */}
+          <section className="p-6 pt-0 space-y-4">
+            <div className="flex items-center gap-2 text-muted-foreground mb-2">
+              <History size={16} />
+              <h3 className="text-sm font-semibold uppercase tracking-wider">Histórico de Atividades</h3>
+            </div>
+            
+            <div className="space-y-4 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-border/50">
+              {logs.length === 0 ? (
+                <p className="text-xs text-muted-foreground pl-8 italic">Nenhuma atividade registrada.</p>
+              ) : (
+                logs.map((log) => (
+                  <div key={log.id} className="relative pl-8">
+                    <div className="absolute left-0 top-1.5 w-[24px] h-[24px] rounded-full bg-secondary border-2 border-background flex items-center justify-center">
+                      <div className="w-2 h-2 rounded-full bg-primary" />
+                    </div>
+                    <div className="text-sm">
+                      <span className="font-medium text-foreground">
+                        {log.action === 'move' ? (
+                          <>Moveu de <span className="text-primary">{log.details.from}</span> para <span className="text-primary">{log.details.to}</span></>
+                        ) : log.action === 'create' ? (
+                          'Criou o lead'
+                        ) : log.action === 'message_gen' ? (
+                          'Gerou sugestões de IA'
+                        ) : log.action}
+                      </span>
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        {new Date(log.created_at).toLocaleString('pt-BR')}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </section>
         </div>
 

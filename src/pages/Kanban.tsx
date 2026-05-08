@@ -1,18 +1,35 @@
 import { KanbanBoard } from '../components/leads/KanbanBoard';
 import { StageRulesModal } from '../components/leads/StageRulesModal';
-import { Plus, Settings2 } from 'lucide-react';
+import { Plus, Settings2, Search, Filter } from 'lucide-react';
 import { useState } from 'react';
 import { AddLeadModal } from '../components/leads/AddLeadModal';
 import { useLeads } from '../hooks/useLeads';
 import { useCustomFields } from '../hooks/useCustomFields';
 import { useStageRules } from '../hooks/useStageRules';
+import { useMembers } from '../hooks/useMembers';
+import { useWorkspace } from '../contexts/WorkspaceContext';
 
 export function Kanban() {
+  const { profile } = useWorkspace();
   const { leads, loading, refresh, moveLead, addLead } = useLeads();
+  const { members } = useMembers();
   const { fieldDefinitions } = useCustomFields();
   const { rules, saveRules } = useStageRules();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
+
+  const [search, setSearch] = useState('');
+  const [filterUser, setFilterUser] = useState<string>('all');
+
+  const filteredLeads = leads.filter(lead => {
+    const matchesSearch = 
+      lead.name.toLowerCase().includes(search.toLowerCase()) ||
+      (lead.company?.toLowerCase() ?? '').includes(search.toLowerCase());
+    
+    const matchesUser = filterUser === 'all' || lead.assigned_to === filterUser;
+    
+    return matchesSearch && matchesUser;
+  });
 
   return (
     <div className="space-y-6 flex flex-col h-full">
@@ -34,9 +51,36 @@ export function Kanban() {
         </div>
       </div>
 
+      {/* Filters Bar */}
+      <div className="flex flex-col md:flex-row gap-3 p-4 glass-card rounded-xl">
+        <div className="flex-1 relative">
+          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Buscar por nome ou empresa..."
+            className="w-full bg-secondary/50 border border-border rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary outline-none transition-all"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="flex items-center gap-2 min-w-[200px]">
+          <Filter size={16} className="text-muted-foreground" />
+          <select
+            className="flex-1 bg-secondary/50 border border-border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+            value={filterUser}
+            onChange={(e) => setFilterUser(e.target.value)}
+          >
+            <option value="all">Todos os responsáveis</option>
+            {members.map(m => (
+              <option key={m.id} value={m.id}>{m.full_name ?? m.email}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       <div className="flex-1 min-h-0">
         <KanbanBoard
-          leads={leads}
+          leads={filteredLeads}
           loading={loading}
           refresh={refresh}
           moveLead={moveLead}

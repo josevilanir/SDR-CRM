@@ -31,6 +31,7 @@ export function JoinWorkspace() {
       });
       if (error) throw error;
       await refresh();
+      navigate('/', { replace: true });
     } catch (err: any) {
       setError(err.message);
     } finally {

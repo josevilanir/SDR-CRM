@@ -108,22 +108,25 @@ export function Layout() {
             <div className="absolute left-4 right-4 top-full mt-2 glass-card border border-border/50 rounded-xl shadow-2xl z-[70] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
               <div className="p-2 max-h-[300px] overflow-y-auto">
                 <p className="px-3 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Meus Workspaces</p>
-                {workspaces.map((w) => (
-                  <button
-                    key={w.id}
+                {workspaces.map((w) => {
+                  if (!w) return null;
+                  return (
+                    <button
+                      key={w.id}
                     onClick={async () => {
                       await switchWorkspace(w.id);
                       setShowWorkspaceMenu(false);
                     }}
                     className={cn(
                       "w-full flex items-center gap-3 p-2 rounded-lg text-sm transition-colors",
-                      w.id === workspace?.id ? "bg-primary/10 text-primary font-bold" : "hover:bg-secondary/50"
+                      (workspace && w.id === workspace.id) ? "bg-primary/10 text-primary font-bold" : "hover:bg-secondary/50"
                     )}
                   >
-                    <div className={cn("w-2 h-2 rounded-full", w.id === workspace?.id ? "bg-primary" : "bg-muted-foreground/30")} />
+                    <div className={cn("w-2 h-2 rounded-full", (workspace && w.id === workspace.id) ? "bg-primary" : "bg-muted-foreground/30")} />
                     <span className="truncate">{w.name}</span>
                   </button>
-                ))}
+                  );
+                })}
               </div>
               <div className="p-2 border-t border-border/50 bg-secondary/30">
                 <Link

@@ -22,8 +22,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const isLoadedRef = useRef(false);
   const isFetchingRef = useRef(false);
 
-  const fetchWorkspaceData = useCallback(async () => {
-    if (isFetchingRef.current) return;
+  const fetchWorkspaceData = useCallback(async (force = false) => {
+    if (isFetchingRef.current && !force) return;
     isFetchingRef.current = true;
     setLoading(true);
     try {
@@ -59,7 +59,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         .select('workspace_id, workspaces(*)')
         .eq('profile_id', user.id);
 
-      const userWorkspaces = (membershipData?.map(m => m.workspaces) || []) as unknown as Workspace[];
+      const userWorkspaces = (membershipData?.map(m => m.workspaces).filter(w => !!w) || []) as unknown as Workspace[];
       setWorkspaces(userWorkspaces);
 
       // Current active workspace
@@ -75,6 +75,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const switchWorkspace = async (workspaceId: string) => {
     if (!profile) return;
     
+    setLoading(true);
+    
     // Find the membership for the role
     const { data: member } = await supabase
       .from('workspace_members')
@@ -83,7 +85,10 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       .eq('workspace_id', workspaceId)
       .single();
 
-    if (!member) return;
+    if (!member) {
+      setLoading(false);
+      return;
+    }
 
     const { error } = await supabase
       .from('profiles')
@@ -93,11 +98,13 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       })
       .eq('id', profile.id);
 
-    if (error) throw error;
+    if (error) {
+      setLoading(false);
+      throw error;
+    }
     
-    // Refresh all data
-    isLoadedRef.current = false;
-    await fetchWorkspaceData();
+    // Hard reload to ensure all contexts and hooks reset with new workspace data
+    window.location.href = '/';
   };
 
   const updateProfile = async (updates: Partial<Profile>) => {
@@ -130,7 +137,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   }, [fetchWorkspaceData]);
 
   return (
-    <WorkspaceContext.Provider value={{ profile, workspace, workspaces, loading, refresh: fetchWorkspaceData, updateProfile, switchWorkspace }}>
+    <WorkspaceContext.Provider value={{ profile, workspace, workspaces, loading, refresh: () => fetchWorkspaceData(true), updateProfile, switchWorkspace }}>
       {children}
     </WorkspaceContext.Provider>
   );

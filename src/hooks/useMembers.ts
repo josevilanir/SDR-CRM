@@ -15,17 +15,35 @@ export function useMembers() {
     try {
       const [{ data: membersData }, { data: invitesData }] = await Promise.all([
         supabase
-          .from('profiles')
-          .select('*')
-          .eq('workspace_id', workspace.id)
-          .order('created_at'),
+          .from('workspace_members')
+          .select(`
+            role,
+            profiles (
+              id,
+              full_name,
+              email,
+              created_at
+            )
+          `)
+          .eq('workspace_id', workspace.id),
         supabase
           .from('workspace_invites')
           .select('*')
           .eq('workspace_id', workspace.id)
           .order('created_at', { ascending: false }),
       ]);
-      setMembers(membersData ?? []);
+
+      // Flatten the join result to match Profile interface
+      const flattenedMembers = (membersData?.map((m: any) => {
+        const profile = m.profiles;
+        return {
+          ...profile,
+          role: m.role,
+          workspace_id: workspace.id
+        };
+      }) || []) as Profile[];
+
+      setMembers(flattenedMembers);
       setInvites(invitesData ?? []);
     } finally {
       setLoading(false);

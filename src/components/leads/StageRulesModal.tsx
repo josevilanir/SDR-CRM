@@ -44,6 +44,8 @@ export function StageRulesModal({ rules, onSave, onClose }: StageRulesModalProps
     try {
       await onSave(localRules);
       onClose();
+    } catch (err: any) {
+      alert('Erro ao salvar regras: ' + err.message);
     } finally {
       setSaving(false);
     }

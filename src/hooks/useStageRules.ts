@@ -39,10 +39,16 @@ export function useStageRules() {
 
   const saveRules = async (newRules: Record<string, string[]>) => {
     if (!workspace) return;
-    await supabase
+    const { error } = await supabase
       .from('workspaces')
       .update({ stage_transition_rules: newRules })
       .eq('id', workspace.id);
+    
+    if (error) {
+      console.error('Error saving rules:', error);
+      throw error;
+    }
+    
     setRules(newRules);
   };
 

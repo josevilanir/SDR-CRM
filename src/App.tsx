@@ -51,18 +51,12 @@ function AppRoutes() {
 
       <Route
         path="/create-workspace"
-        element={
-          !session ? <Navigate to="/login" replace /> :
-          <CreateWorkspace />
-        }
+        element={!session ? <Navigate to="/login" replace /> : <CreateWorkspace />}
       />
 
       <Route
         path="/join"
-        element={
-          !session ? <Navigate to="/login" replace /> :
-          <JoinWorkspace />
-        }
+        element={!session ? <Navigate to="/login" replace /> : <JoinWorkspace />}
       />
 
       <Route

@@ -92,6 +92,17 @@ export function Layout() {
             )}
           </button>
 
+          {/* Sidebar Toggle (Desktop only) */}
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className={cn(
+              "absolute -right-3 top-6 w-6 h-6 bg-background border border-border rounded-full flex items-center justify-center shadow-md hover:bg-secondary transition-colors z-[60] hidden lg:flex",
+              !isSidebarOpen && "right-[-12px]"
+            )}
+          >
+            {isSidebarOpen ? <X size={12} /> : <Menu size={12} />}
+          </button>
+
           {/* Workspace Dropdown */}
           {showWorkspaceMenu && isSidebarOpen && (
             <div className="absolute left-4 right-4 top-full mt-2 glass-card border border-border/50 rounded-xl shadow-2xl z-[70] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
@@ -133,35 +144,7 @@ export function Layout() {
             </div>
           )}
         </div>
-            className="p-2 hover:bg-secondary rounded-lg transition-colors ml-auto hidden lg:flex"
-          >
-            {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
-          <button
-            onClick={() => setIsSidebarOpen(false)}
-            className="p-2 hover:bg-secondary rounded-lg transition-colors ml-auto lg:hidden"
-          >
-            <X size={20} />
-          </button>
-        </div>
 
-        {/* Workspace badge */}
-        {workspace && (
-          <div className={cn(
-            "mx-4 mt-4 p-3 bg-secondary/50 rounded-xl flex items-center gap-3 min-w-0",
-            !isSidebarOpen && "lg:justify-center lg:px-2"
-          )}>
-            <div className="flex-shrink-0 w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center">
-              <Building2 size={16} className="text-primary" />
-            </div>
-            {(isSidebarOpen || (!isSidebarOpen && true)) && (
-              <div className={cn("min-w-0", !isSidebarOpen && "lg:hidden")}>
-                <p className="text-xs text-muted-foreground leading-none mb-1">Workspace</p>
-                <p className="text-sm font-semibold truncate">{workspace.name}</p>
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Nav */}
         <nav className="mt-4 px-4 space-y-1 flex-1 overflow-y-auto">

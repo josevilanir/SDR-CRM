@@ -7,10 +7,8 @@ import { useLeads } from '../hooks/useLeads';
 import { useCustomFields } from '../hooks/useCustomFields';
 import { useStageRules } from '../hooks/useStageRules';
 import { useMembers } from '../hooks/useMembers';
-import { useWorkspace } from '../contexts/WorkspaceContext';
 
 export function Kanban() {
-  const { profile } = useWorkspace();
   const { leads, loading, refresh, moveLead, addLead } = useLeads();
   const { members } = useMembers();
   const { fieldDefinitions } = useCustomFields();

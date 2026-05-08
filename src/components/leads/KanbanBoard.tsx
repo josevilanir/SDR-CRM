@@ -14,13 +14,22 @@ const FIELD_LABELS: Record<string, string> = {
   job_title: 'Cargo', source: 'Origem', notes: 'Observações',
 };
 
-export function KanbanBoard({ leads, loading, refresh, moveLead, fieldDefinitions = [], stageRules = {} }: {
+export function KanbanBoard({ 
+  leads, 
+  loading, 
+  refresh, 
+  moveLead, 
+  fieldDefinitions = [], 
+  stageRules = {},
+  displayStages = STAGES
+}: {
   leads: any[],
   loading: boolean,
   refresh: () => void,
   moveLead: (id: string, status: string) => Promise<void>,
   fieldDefinitions?: FieldDefinition[],
   stageRules?: Record<string, string[]>,
+  displayStages?: string[]
 }) {
   const [activeLead, setActiveLead] = useState<Lead | null>(null);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -91,7 +100,7 @@ export function KanbanBoard({ leads, loading, refresh, moveLead, fieldDefinition
   if (loading) {
     return (
       <div className="flex gap-6 overflow-x-auto pb-4 h-full">
-        {STAGES.map((stage) => (
+        {displayStages.map((stage) => (
           <div key={stage} className="min-w-[300px] flex-1 animate-pulse">
             <div className="h-6 w-32 bg-secondary rounded mb-4" />
             <div className="h-[500px] bg-secondary/50 rounded-2xl" />
@@ -109,7 +118,7 @@ export function KanbanBoard({ leads, loading, refresh, moveLead, fieldDefinition
         onDragEnd={handleDragEnd}
       >
         <div className="flex gap-6 overflow-x-auto pb-4 h-full min-h-[600px]">
-          {STAGES.map((stage) => (
+          {displayStages.map((stage) => (
             <KanbanColumn
               key={stage}
               id={stage}

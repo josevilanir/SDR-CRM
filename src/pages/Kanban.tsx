@@ -1,6 +1,6 @@
 import { KanbanBoard } from '../components/leads/KanbanBoard';
 import { StageRulesModal } from '../components/leads/StageRulesModal';
-import { Plus, Settings2, Search, Filter } from 'lucide-react';
+import { Plus, Settings2, Search, Filter, SlidersHorizontal } from 'lucide-react';
 import { useState } from 'react';
 import { AddLeadModal } from '../components/leads/AddLeadModal';
 import { useLeads } from '../hooks/useLeads';
@@ -18,6 +18,7 @@ export function Kanban() {
 
   const [search, setSearch] = useState('');
   const [filterUser, setFilterUser] = useState<string>('all');
+  const [filterStage, setFilterStage] = useState<string>('all');
 
   const filteredLeads = leads.filter(lead => {
     const matchesSearch = 
@@ -25,9 +26,12 @@ export function Kanban() {
       (lead.company?.toLowerCase() ?? '').includes(search.toLowerCase());
     
     const matchesUser = filterUser === 'all' || lead.assigned_to === filterUser;
+    const matchesStage = filterStage === 'all' || lead.status === filterStage;
     
-    return matchesSearch && matchesUser;
+    return matchesSearch && matchesUser && matchesStage;
   });
+
+  const displayStages = filterStage === 'all' ? STAGES : [filterStage];
 
   return (
     <div className="space-y-6 flex flex-col h-full">
@@ -74,6 +78,19 @@ export function Kanban() {
             ))}
           </select>
         </div>
+        <div className="flex items-center gap-2 min-w-[200px]">
+          <SlidersHorizontal size={16} className="text-muted-foreground" />
+          <select
+            className="flex-1 bg-secondary/50 border border-border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+            value={filterStage}
+            onChange={(e) => setFilterStage(e.target.value)}
+          >
+            <option value="all">Todas as etapas</option>
+            {STAGES.map(s => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="flex-1 min-h-0">
@@ -84,6 +101,7 @@ export function Kanban() {
           moveLead={moveLead}
           fieldDefinitions={fieldDefinitions}
           stageRules={rules}
+          displayStages={displayStages}
         />
       </div>
 

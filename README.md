@@ -10,7 +10,7 @@ Um CRM especializado para equipes de Pré-Vendas (SDR) que utiliza Inteligência
 ## 🔗 Links do Projeto
 
 - **Aplicação Publicada:** [https://sdr-crm-cyan.vercel.app/](https://sdr-crm-cyan.vercel.app/)
-- **Vídeo de Apresentação:** [Link para o Vídeo (YouTube/Drive)](https://youtube.com/...)
+- **Vídeo de Apresentação:** [Assista no Google Drive](https://drive.google.com/file/d/1HmewAIi_xaSU524bW1N9-AFTeCJqnhIj/view?usp=drive_link)
 
 ---
 
